@@ -12,10 +12,37 @@ type tipd struct {
 	router *gin.Engine
 	pubsub Pubsub
 	ctx    context.Context
+	cancel context.CancelFunc
 }
 
-func (t *tipd) Serve() error {
-	return nil
+func NewTipd(pubsub Pubsub) *tipd {
+	router := gin.New()
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"Code": 404, "Reason": "thord: Page not found. Resource you request may not exist."})
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	t := &tipd{
+		ctx:    ctx,
+		cancel: cancel,
+		router: router,
+		pubsub: pubsub,
+	}
+	router.GET("/v1/topic", t.CreateTopic)
+	router.GET("/v1/topic/subscription", t.Topic)
+	router.GET("/v1/topic", t.Destroy)
+
+	router.GET("/v1/topic", t.Publish)
+	router.GET("/v1/ack", t.Ack)
+
+	router.GET("/v1/subscription", t.Subscribe)
+	router.GET("/v1/subscription", t.Unsubscribe)
+	router.GET("/v1/subscription", t.Subscription)
+	router.GET("/v1/subscription", t.Pull)
+
+	router.GET("/v1/snapshots", t.CreateSnapshots)
+	router.GET("/v1/snapshots", t.GetSnapshots)
+	router.GET("/v1/snapshots", t.DeleteSnapshots)
+	return t
 }
 
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字
