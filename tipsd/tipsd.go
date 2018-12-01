@@ -15,7 +15,7 @@ func (s *Server) CreateTopic(c *gin.Context) {
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
-	if err := s.pubsub.CreateTopic(ctx, topic); err != nil {
+	if _, err := s.pubsub.CreateTopic(ctx, topic); err != nil {
 		fail(c, http.StatusInternalServerError, err)
 		return
 	}
