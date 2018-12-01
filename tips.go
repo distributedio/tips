@@ -7,11 +7,17 @@ import (
 )
 
 type Tips struct {
-	ps *Pubsub
+	ps *pubsub.Pubsub
+}
+type Topic struct {
+	pubsub.Topic
+}
+type Subscription struct {
+	pubsub.Subscription
 }
 
 func NewTips(path string) (tips *Tips, err error) {
-	ps, err = NewPubsub(path)
+	ps, err := pubsub.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -19,63 +25,120 @@ func NewTips(path string) (tips *Tips, err error) {
 		ps: ps,
 	}, nil
 }
-func NewPubsub(path string) (*Pubsub, error) {
-	ps, err := pubsub.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return ps, nil
-}
+
+//创建一个topic
 func (ti *Tips) CreateTopic(cxt context.Context, topic string) (err error) {
-	//构造topic对象
-	t := &Topic{
-		name: topic,
-	}
-	txn, err := ti.ps.Begin()
-	if err != nil {
+	if txn, err := ti.ps.Begin(); err != nil {
 		return err
 	}
-	err := txn.CreateTopic(t)
-	if err != nil {
+	if err = txn.CreateTopic(topic); err != nil {
 		return err
 	}
-	if err := txn.Commit(cxt); err != nil {
+	if err = txn.Commit(cxt); err != nil {
 		return err
 	}
 	return nil
 
 }
 
-func (ti *Tips) Topic(cxt context.Context, topic string) (subName []string, err error) {
+//查询当前topic的信息
+func (ti *Tips) GetTopic(ctx context.Context) (topic *Topic, err error) {
+	if txn, err := ti.ps.Begin(); err != nil {
+		return nil, err
+	}
+	if topic, err := txn.GetTopic(topic); err != nil {
+		return nil, err
+	}
+	if err = txn.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return topic, nil
+}
+
+//查看当前topic订阅信息
+func (ti *Tips) Topic(cxt context.Context, topic string) (topic *Topic, err error) {
+	if txn, err := ti.ps.Begin(); err != nil {
+		return nil, err
+	}
+	topic, err := txn.GetTopic(topic)
+	if err != nil {
+		return nil, err
+	}
+	if err = txn.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return topic, nil
 
 }
-func (ti *Tips) Destroy(cxt context.Context, topic string) (err error) {
 
+//销毁一个topic
+func (ti *Tips) Destroy(cxt context.Context, topic string) (err error) {
+	if txn, err := ti.ps.Begin(); err != nil {
+		return err
+	}
+	if err = txn.DeleteTopic(topic); err != nil {
+		return err
+	}
+	if err = txn.Commit(ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) (msgids []string, err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }
 func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
-
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }
 
 func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (index int64, err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }
 func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) (err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
+}
+func (ti *Tips) Subscription(cxt context.Context, subName string) (topic string, err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 
 }
-func (ti *Tips) Subscription(cxt context.Context, subName string) (topics string, err error) //topics struct{}
 func (ti *Tips) Pull(cxt context.Context, subName string, index, limit int64, ack bool) (messages []string, offset int64, err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }
 
 func (ti *Tips) CreateSnapshots(cxt context.Context, name string, subName string) (index64 int, err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }
 func (ti *Tips) DeleteSnapshots(cxt context.Context, name string, subName string) (err error) {
-
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }
-func (ti *Tips) GetSnapshots(cxt context.Context, subName string) (name string, err error) {
-
-} // name struct{}
 func (ti *Tips) Seek(cxt context.Context, name string) (index int64, err error) {
-
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
 }

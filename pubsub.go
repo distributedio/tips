@@ -1,9 +1,14 @@
 package tips
 
-import "context"
+import (
+	"context"
+
+	"github.com/shafreeck/tips/store/pubsub"
+)
 
 type Pubsub interface {
 	CreateTopic(cxt context.Context, topic string) (err error)
+	GetTopic(ctx context.Context, name string) (topic *Topic, err error)
 	Topic(cxt context.Context, topic string) (subName []string, err error)
 	Destroy(cxt context.Context, topic string) (err error)
 
@@ -17,6 +22,15 @@ type Pubsub interface {
 
 	CreateSnapshots(cxt context.Context, name string, subName string) (index64 int, err error)
 	DeleteSnapshots(cxt context.Context, name string, subName string) (err error)
-	GetSnapshots(cxt context.Context, subName string) (name string, err error) // name struct
 	Seek(cxt context.Context, name string) (index int64, err error)
+}
+
+func MockPubsub() Pubsub {
+	ps, err := pubsub.MockOpen(path)
+	if err != nil {
+		return nil, err
+	}
+	return &Tips{
+		ps: ps,
+	}, nil
 }
