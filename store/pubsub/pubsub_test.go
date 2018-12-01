@@ -446,3 +446,50 @@ func TestGetSnapshot(t *testing.T) {
 
 	CleanupSnapshots(topic, subscription, snapshots)
 }
+
+func TestDeleteSnapshot(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+
+	snapshots := SetupSnapshots(topic, subscription)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+	for n := range snapshots {
+		err := txn.DeleteSnapshot(topic, subscription, n)
+		assert.NoError(t, err)
+	}
+
+	// 检查是否真正删除成功
+	for n := range snapshots {
+		ss, err := txn.GetSnapshot(topic, subscription, n)
+		assert.Equal(t, ErrNotFound, err)
+		assert.Nil(t, ss)
+	}
+}
+
+func TestGetSnapshots(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+
+	snapshots := SetupSnapshots(topic, subscription)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	snaps, err := txn.GetSnapshots(topic, subscription)
+
+	for i := range snaps {
+		got := snaps[i]
+		ss := snapshots[got.Name]
+		assert.Equal(t, ss.Name, got.Name)
+		assert.Equal(t, ss.Subscription.Name, got.Subscription.Name)
+		assert.Equal(t, ss.Subscription.Sent.String(), got.Subscription.Sent.String())
+		assert.Equal(t, ss.Subscription.Acked.String(), got.Subscription.Acked.String())
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	CleanupSnapshots(topic, subscription, snapshots)
+}

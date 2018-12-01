@@ -435,3 +435,30 @@ func (txn *Transaction) GetSnapshot(topic *Topic, subscription *Subscription, na
 
 	return snapshot, nil
 }
+
+// DeleteSnapshot 删除一个订阅快照
+func (txn *Transaction) DeleteSnapshot(topic *Topic, subscription *Subscription, name string) error {
+	return txn.t.Delete(SnapshotKey(topic, subscription, name))
+}
+
+// GetSnapshots 返回一个订阅所有的快照
+func (txn *Transaction) GetSnapshots(topic *Topic, subscription *Subscription) ([]*Snapshot, error) {
+	prefix := SnapshotKey(topic, subscription, "")
+	iter, err := txn.t.Seek(prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	var snapshots []*Snapshot
+	for iter.Valid() && iter.Key().HasPrefix(prefix) {
+		ss := &Snapshot{}
+		if err := json.Unmarshal(iter.Value(), ss); err != nil {
+			return nil, err
+		}
+		snapshots = append(snapshots, ss)
+		if err := iter.Next(); err != nil {
+			return nil, err
+		}
+	}
+	return snapshots, nil
+}
