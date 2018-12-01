@@ -46,6 +46,12 @@ func TestEncodeInt64(t *testing.T) {
 	assert.Equal(t, 1, bytes.Compare(a, b))
 }
 
+func TestDecodeInt64(t *testing.T) {
+	assert.Equal(t, int64(1), DecodeInt64(EncodeInt64(1)))
+	assert.Equal(t, int64(-1), DecodeInt64(EncodeInt64(-1)))
+	assert.Equal(t, int64(0), DecodeInt64(EncodeInt64(0)))
+}
+
 func TestTopicKey(t *testing.T) {
 	assert.Equal(t, string(TopicKey("unittest")), "T:unittest")
 }
