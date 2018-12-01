@@ -56,9 +56,7 @@ func (ti *Tips) Topic(cxt context.Context, name string) (*Topic, error) {
 	//如果存在则返回topic信息
 	topic := &Topic{}
 
-	topic.CreatedAt = t.CreatedAt
-	topic.Name = t.Name
-	topic.ObjectID = t.ObjectID
+	topic.Topic = *t
 
 	if err = txn.Commit(cxt); err != nil {
 		return nil, err
@@ -122,20 +120,28 @@ func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
 }
 
 //Subscribe 创建topic 和 subscription 订阅关系
-func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (int64, error) {
+func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (*Subscription, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	//查看当前topic是否存在
-	_, err = txn.GetTopic(topic)
+	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	//func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription, error)
-	//sub := txn.CreateSubscription(t, subName)
-	return 0, nil
+	s, err := txn.CreateSubscription(t, subName)
+	if err != nil {
+		return nil, err
+	}
+	if err = txn.Commit(cxt); err != nil {
+		return nil, err
+	}
+	sub := &Subscription{}
+	sub.Subscription = *s
+	return sub, nil
 }
 
 //Unsubscribe 指定topic 和 subscription 订阅关系
@@ -157,12 +163,14 @@ func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) e
 }
 
 //Subscription 查询当前subscription的信息
-func (ti *Tips) Subscription(cxt context.Context, subName string) (string, error) {
-	return "", nil
+//func (ti *Tips) Subscription(cxt context.Context, subName string) (string, error) {
+//Pull 拉取消息
+func (ti *Tips) Pull(cxt context.Context, subName string, topic string, index, limit int64, ack bool) ([]string, int64, error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return nil, 0, err
+	}
 
-}
-
-func (ti *Tips) Pull(cxt context.Context, subName string, index, limit int64, ack bool) ([]string, int64, error) {
 	return nil, 0, nil
 }
 

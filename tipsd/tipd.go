@@ -193,6 +193,7 @@ func (t *Server) Subscription(c *gin.Context) {
 //如果没有指定消息拉去超时间，默认1s 超时,超时单位默认为s
 //返回下一次拉去的位置
 func (t *Server) Pull(c *gin.Context) {
+	topic := c.Param("topic")
 	subName := c.Query("subName")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subname is not null")
@@ -210,7 +211,7 @@ func (t *Server) Pull(c *gin.Context) {
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
 	//TODO
-	_, _, err := t.pull(ctx, subName, cursor, limit, ack, t1)
+	_, _, err := t.pull(ctx, subName, topic, cursor, limit, ack, t1)
 	if err != nil {
 		// if err == keyNotFound {
 		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
