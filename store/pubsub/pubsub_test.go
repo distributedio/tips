@@ -429,4 +429,6 @@ func TestGetSnapshot(t *testing.T) {
 		assert.Equal(t, ss.Subscription.Acked.String(), got.Subscription.Acked.String())
 	}
 	assert.NoError(t, txn.Commit(context.Background()))
+
+	CleanupSnapshots(topic, subscription, snapshots)
 }
