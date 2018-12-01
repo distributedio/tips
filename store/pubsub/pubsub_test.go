@@ -21,6 +21,13 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestEncodeInt64(t *testing.T) {
+	one := EncodeInt64(-8)
+	two := EncodeInt64(-16)
+	t.Logf("%08b\n", one[7])
+	t.Logf("%08b\n", two[7])
+}
+
 func TestTopicKey(t *testing.T) {
 	assert.Equal(t, string(TopicKey("unittest")), "T:unittest")
 }
@@ -571,4 +578,34 @@ func TestAppend(t *testing.T) {
 
 		assert.NoError(t, iter.Next())
 	}
+}
+
+func TestScan(t *testing.T) {
+	// 生成一个过去时间，确保新生成的Offset一定会比这个数值大，不受时钟调整的影响
+	now := time.Now().UnixNano() - int64(10*time.Second)
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: now}
+
+	messages := SetupMessages(topic)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	offset := &Offset{now, 0}
+	count := len(messages)
+	assert.NoError(t, txn.Scan(topic, offset, func(id MessageID, got *Message) bool {
+		if count <= 0 {
+			return false
+		}
+
+		m := messages[id.String()]
+		assert.NotNil(t, m)
+		assert.NotNil(t, got)
+		assert.Equal(t, m.Payload, got.Payload)
+		count--
+		return true
+	}))
+	assert.Equal(t, 0, count)
+
+	CleanupMessages(topic, messages)
 }

@@ -33,16 +33,24 @@ type Offset struct {
 // EncodeInt64 对int64编码，使之在TiKV中升序排列
 func EncodeInt64(v int64) []byte {
 	var buf bytes.Buffer
+	if v < 0 {
+		v = -v
+	} else if v > 0 {
+		v = int64(uint64(v) | 0x8000000000000000)
+	}
 
 	// Ignore the error returned here, because buf is a memory io.Writer, can should not fail here
-	binary.Write(&buf, binary.BigEndian, -v)
+	binary.Write(&buf, binary.BigEndian, v)
 	return buf.Bytes()
 }
 
 // DecodeInt64 从二进制中解码int64
 func DecodeInt64(b []byte) int64 {
 	v := int64(binary.BigEndian.Uint64(b))
-	return -v
+	if v < 0 {
+		v = int64(uint64(v) & 0x7FFFFFFFFFFFFFFF)
+	}
+	return v
 }
 
 // Bytes 返回Offset的二进制形式，可用于内存比较
@@ -352,13 +360,15 @@ type ScanHandler func(id MessageID, message *Message) bool
 
 // Scan 首先跳转到Topic对应的offset，之后将所有消息传递给回调函数
 func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) error {
+	prefix := MessageKey(topic, nil)
 	key := MessageKey(topic, offset)
 	iter, err := txn.t.Seek(key)
 	if err != nil {
 		return err
 	}
-	for iter.Valid() && iter.Key().HasPrefix([]byte(topic.Name)) {
-		offset := OffsetFromBytes(iter.Key()[len(topic.Name):])
+
+	for iter.Valid() && iter.Key().HasPrefix(prefix) {
+		offset := OffsetFromBytes(iter.Key()[len(prefix):])
 		msg := &Message{}
 		if err := json.Unmarshal(iter.Value(), msg); err != nil {
 			return err
