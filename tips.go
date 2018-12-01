@@ -59,18 +59,21 @@ func MockTips() (*Tips, error) {
 }
 
 //创建一个topic
-func (ti *Tips) CreateTopic(ctx context.Context, topic string) error {
+func (ti *Tips) CreateTopic(ctx context.Context, topic string) (*Topic, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if _, err = txn.CreateTopic(topic); err != nil {
-		return err
+	t, err := txn.CreateTopic(topic)
+	if err != nil {
+		return nil, err
 	}
 	if err = txn.Commit(ctx); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	top := &Topic{}
+	top.Topic = *t
+	return top, nil
 
 }
 
