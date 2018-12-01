@@ -30,6 +30,6 @@ func MockPubsub() (Pubsub, error) {
 		return nil, err
 	}
 	return &Tips{
-		ps: &ps,
+		ps: ps,
 	}, nil
 }

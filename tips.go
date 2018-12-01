@@ -16,7 +16,7 @@ type Subscription struct {
 	pubsub.Subscription
 }
 
-func NewTips(path string) (tips *Tips, err error) {
+func NewTips(path string) (tips Pubsub, err error) {
 	ps, err := pubsub.Open(path)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func NewTips(path string) (tips *Tips, err error) {
 }
 
 //创建一个topic
-func (ti *Tips) CreateTopic(cxt context.Context, topic string) (err error) {
+func (ti *Tips) CreateTopic(cxt context.Context, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return err
@@ -43,7 +43,8 @@ func (ti *Tips) CreateTopic(cxt context.Context, topic string) (err error) {
 }
 
 //查看当前topic订阅信息
-func (ti *Tips) Topic(ctx context.Context, name string) (topic *Topic, err error) {
+func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
+	topic := &Topic{}
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
@@ -63,7 +64,7 @@ func (ti *Tips) Topic(ctx context.Context, name string) (topic *Topic, err error
 }
 
 //销毁一个topic
-func (ti *Tips) Destroy(ctx context.Context, topic string) (err error) {
+func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return err
@@ -77,24 +78,34 @@ func (ti *Tips) Destroy(ctx context.Context, topic string) (err error) {
 	return nil
 }
 
-func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) (msgids []string, err error) {
+func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]string, error) {
+	return nil, nil
 }
+
 func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
+	return nil
 }
 
-func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (index int64, err error) {
+func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (int64, error) {
+	return 0, nil
 }
-func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) (err error) {
+func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) error {
+	return nil
 }
-func (ti *Tips) Subscription(cxt context.Context, subName string) (topic string, err error) {
+func (ti *Tips) Subscription(cxt context.Context, subName string) (string, error) {
+	return "", nil
 
 }
-func (ti *Tips) Pull(cxt context.Context, subName string, index, limit int64, ack bool) (messages []string, offset int64, err error) {
+func (ti *Tips) Pull(cxt context.Context, subName string, index, limit int64, ack bool) ([]string, int64, error) {
+	return nil, 0, nil
 }
 
-func (ti *Tips) CreateSnapshots(cxt context.Context, name string, subName string) (index64 int, err error) {
+func (ti *Tips) CreateSnapshots(cxt context.Context, name string, subName string) (int, error) {
+	return 0, nil
 }
-func (ti *Tips) DeleteSnapshots(cxt context.Context, name string, subName string) (err error) {
+func (ti *Tips) DeleteSnapshots(cxt context.Context, name string, subName string) error {
+	return nil
 }
-func (ti *Tips) Seek(cxt context.Context, name string) (index int64, err error) {
+func (ti *Tips) Seek(cxt context.Context, name string) (int64, error) {
+	return 0, nil
 }
