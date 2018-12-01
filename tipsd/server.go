@@ -105,3 +105,12 @@ func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Durat
 func ErrNotFound(err error) bool {
 	return strings.Contains(err.Error(), "not found")
 }
+
+type Error struct {
+	Reason string `json:"reason"`
+}
+
+func fail(c *gin.Context, httpStatus int, err error) {
+	e := Error{Reason: err.Error()}
+	c.JSON(httpStatus, e)
+}

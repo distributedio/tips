@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -15,7 +16,7 @@ func (s *Server) CreateTopic(c *gin.Context) {
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 	if err := s.pubsub.CreateTopic(ctx, topic); err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, topic)
@@ -30,10 +31,10 @@ func (t *Server) Topic(c *gin.Context) {
 	msg, err := t.pubsub.Topic(ctx, topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, msg)
@@ -46,7 +47,7 @@ func (t *Server) Destroy(c *gin.Context) {
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
 	if err := t.pubsub.Destroy(ctx, topic); err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -61,15 +62,15 @@ func (t *Server) Publish(c *gin.Context) {
 		Messages []string
 	}{}
 	if err := c.BindJSON(pub); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		fail(c, http.StatusBadRequest, err)
 		return
 	}
 	if len(pub.Topic) == 0 {
-		c.JSON(http.StatusBadRequest, "topic is not null")
+		fail(c, http.StatusBadRequest, errors.New("topic is not null"))
 		return
 	}
 	if len(pub.Messages) == 0 {
-		c.JSON(http.StatusBadRequest, "msgs is not null")
+		fail(c, http.StatusBadRequest, errors.New("msg is not null"))
 		return
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
@@ -77,10 +78,10 @@ func (t *Server) Publish(c *gin.Context) {
 	msgids, err := t.pubsub.Publish(ctx, pub.Messages, pub.Topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, msgids)
@@ -94,7 +95,7 @@ func (t *Server) Ack(c *gin.Context) {
 		Topic   string
 	}{}
 	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		fail(c, http.StatusBadRequest, err)
 		return
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
@@ -102,10 +103,10 @@ func (t *Server) Ack(c *gin.Context) {
 	err := t.pubsub.Ack(ctx, req.Msgid, req.Topic, req.SubName)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -121,10 +122,10 @@ func (t *Server) Subscribe(c *gin.Context) {
 	index, err := t.pubsub.Subscribe(ctx, subName, topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, index)
@@ -140,10 +141,10 @@ func (t *Server) Unsubscribe(c *gin.Context) {
 	err := t.pubsub.Unsubscribe(ctx, subName, topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -209,10 +210,10 @@ func (t *Server) Pull(c *gin.Context) {
 	msgs, err := t.pull(ctx, pReq, t1)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, msgs)
@@ -231,10 +232,10 @@ func (t *Server) CreateSnapshots(c *gin.Context) {
 	_, err := t.pubsub.CreateSnapshots(ctx, name, subName, topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, name)
@@ -251,10 +252,10 @@ func (t *Server) DeleteSnapshots(c *gin.Context) {
 	err := t.pubsub.DeleteSnapshots(ctx, name, subName, topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -291,10 +292,10 @@ func (t *Server) Seek(c *gin.Context) {
 	sub, err := t.pubsub.Seek(ctx, name, subName, topic)
 	if err != nil {
 		if ErrNotFound(err) {
-			c.JSON(http.StatusNotFound, err.Error())
+			fail(c, http.StatusNotFound, err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, err.Error())
+		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, sub)
