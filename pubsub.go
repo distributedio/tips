@@ -8,7 +8,7 @@ import (
 
 type Pubsub interface {
 	CreateTopic(cxt context.Context, topic string) (err error)
-	Topic(ctx context.Context, name string) (topic *Topic, err error)
+	Topic(cxt context.Context, name string) (topic *Topic, err error)
 	Destroy(cxt context.Context, topic string) (err error)
 
 	Publish(cxt context.Context, msg []string, topic string) (msgids []string, err error)

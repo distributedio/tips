@@ -43,7 +43,7 @@ func (ti *Tips) CreateTopic(cxt context.Context, topic string) error {
 }
 
 //查看当前topic订阅信息
-func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
+func (ti *Tips) Topic(cxt context.Context, name string) (*Topic, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
@@ -60,14 +60,14 @@ func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
 	topic.Name = t.Name
 	topic.ObjectID = t.ObjectID
 
-	if err = txn.Commit(ctx); err != nil {
+	if err = txn.Commit(cxt); err != nil {
 		return nil, err
 	}
 	return topic, nil
 }
 
 //销毁一个topic
-func (ti *Tips) Destroy(ctx context.Context, topic string) error {
+func (ti *Tips) Destroy(cxt context.Context, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	if err = txn.DeleteTopic(topic); err != nil {
 		return err
 	}
-	if err = txn.Commit(ctx); err != nil {
+	if err = txn.Commit(cxt); err != nil {
 		return err
 	}
 	return nil
@@ -106,10 +106,14 @@ func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]stri
 	if err != nil {
 		return nil, err
 	}
+	if err = txn.Commit(cxt); err != nil {
+		return nil, err
+	}
 	MessageID := make([]string, len(messageID))
 	for i := range messageID {
 		MessageID = append(MessageID, messageID[i].String())
 	}
+
 	return MessageID, nil
 }
 
@@ -117,25 +121,38 @@ func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
 	return nil
 }
 
-//Subscribe 指定topic 和 subscription 订阅关系
+//Subscribe 创建topic 和 subscription 订阅关系
 func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (int64, error) {
-	//	txn, err := ti.ps.Begin()
-	//	if err != nil {
-	//		return 0, err
-	//	}
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return 0, err
+	}
 	//查看当前topic是否存在
-	//t, err := txn.GetTopic(topic)
+	_, err = txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	// f func(t *pubsub.Topic, name string) (*pubsub.Subscription, error)
-	//	txn.GetSubscription()
+	if err != nil {
+		return 0, err
+	}
+	//func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription, error)
+	//sub := txn.CreateSubscription(t, subName)
 	return 0, nil
 }
 
 //Unsubscribe 指定topic 和 subscription 订阅关系
 func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) error {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
+	//查看当前topic是否存在
+	t, err := txn.GetTopic(topic)
+	//如果当前的topic不存在，那么返回错误
+	if err != nil {
+		return err
+	}
+	if err := txn.DeleteSubscription(t, subName); err != nil {
+		return err
+	}
 	return nil
 }
 
