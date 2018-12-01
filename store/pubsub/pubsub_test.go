@@ -14,7 +14,7 @@ var ps *Pubsub
 
 func TestMain(m *testing.M) {
 	var err error
-	ps, err = MockOpen("mocktikv:///tmp/tips/unittest")
+	ps, err = MockOpen("mocktikv://")
 	if err != nil {
 		panic(err)
 	}
