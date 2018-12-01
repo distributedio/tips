@@ -117,9 +117,12 @@ func TestDeleteTopic(t *testing.T) {
 }
 
 func TestSubscriptionKey(t *testing.T) {
-	assert.Equal(t, "S:unittest:sub", string(SubscriptionKey("unittest", "sub")))
-	assert.Equal(t, "S:unittest:", string(SubscriptionKey("unittest", "")))
-	assert.Equal(t, "S::", string(SubscriptionKey("", "")))
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	var expected []byte
+	expected = append(expected, 'S', ':')
+	expected = append(expected, topic.ObjectID...)
+	expected = append(expected, []byte(":sub")...)
+	assert.Equal(t, expected, SubscriptionKey(topic, "sub"))
 }
 
 func SetupSubscriptions(topic *Topic) map[string]*Subscription {
@@ -140,7 +143,7 @@ func SetupSubscriptions(topic *Topic) map[string]*Subscription {
 			panic(err)
 		}
 
-		err = txn.t.Set(SubscriptionKey(topic.Name, n), data)
+		err = txn.t.Set(SubscriptionKey(topic, n), data)
 		if err != nil {
 			panic(err)
 		}
@@ -157,7 +160,7 @@ func CleanupSubscriptions(topic *Topic, subscriptions map[string]*Subscription) 
 	}
 
 	for n := range subscriptions {
-		err = txn.t.Delete(SubscriptionKey(topic.Name, n))
+		err = txn.t.Delete(SubscriptionKey(topic, n))
 		if err != nil {
 			panic(err)
 		}
@@ -182,7 +185,7 @@ func TestCreateSubscription(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, sub)
 
-	val, err := txn.t.Get(SubscriptionKey("unittest", "sub"))
+	val, err := txn.t.Get(SubscriptionKey(topic, "sub"))
 	assert.NoError(t, err)
 	assert.NotNil(t, val)
 
@@ -226,7 +229,7 @@ func TestDeleteSubscription(t *testing.T) {
 	assert.NotNil(t, txn)
 
 	for n := range subscriptions {
-		t.Log(string(SubscriptionKey(topic.Name, n)))
+		t.Log(string(SubscriptionKey(topic, n)))
 		err := txn.DeleteSubscription(topic, n)
 		assert.NoError(t, err)
 	}

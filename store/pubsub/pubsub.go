@@ -188,10 +188,10 @@ func (txn *Transaction) GetTopic(name string) (*Topic, error) {
 	return topic, nil
 }
 
-func SubscriptionKey(topic, sub string) []byte {
+func SubscriptionKey(topic *Topic, sub string) []byte {
 	var key []byte
 	key = append(key, 'S', ':')
-	key = append(key, []byte(topic)...)
+	key = append(key, topic.ObjectID...)
 	key = append(key, ':')
 	key = append(key, []byte(sub)...)
 	return key
@@ -206,7 +206,7 @@ type Subscription struct {
 
 // CreateSubscritpion 创建一个Subscription
 func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription, error) {
-	key := SubscriptionKey(t.Name, name)
+	key := SubscriptionKey(t, name)
 
 	val, err := txn.t.Get(key)
 	if err != nil {
@@ -236,13 +236,13 @@ func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription
 
 // DeleteSubscription 删除一个Subscription
 func (txn *Transaction) DeleteSubscription(t *Topic, name string) error {
-	key := SubscriptionKey(t.Name, name)
+	key := SubscriptionKey(t, name)
 	return txn.t.Delete(key)
 }
 
 // GetSubscription 返回对应Subscription信息
 func (txn *Transaction) GetSubscription(t *Topic, name string) (*Subscription, error) {
-	key := SubscriptionKey(t.Name, name)
+	key := SubscriptionKey(t, name)
 
 	val, err := txn.t.Get(key)
 	if err != nil {
@@ -264,7 +264,7 @@ func (txn *Transaction) GetSubscription(t *Topic, name string) (*Subscription, e
 func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
 	var subscriptions []*Subscription
 
-	prefix := SubscriptionKey(t.Name, "")
+	prefix := SubscriptionKey(t, "")
 	iter, err := txn.t.Seek(prefix)
 	if err != nil {
 		return nil, err
