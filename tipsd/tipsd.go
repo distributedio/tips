@@ -173,7 +173,7 @@ func (t *Server) Pull(c *gin.Context) {
 	req := &struct {
 		Limit   int64
 		Timeout int64
-		OffAck  bool
+		AutoACK bool
 		Offset  string
 	}{}
 	if err := c.BindJSON(req); err != nil {
@@ -186,13 +186,16 @@ func (t *Server) Pull(c *gin.Context) {
 	if req.Timeout == 0 {
 		req.Timeout = 1
 	}
+	if !req.AutoACK && len(req.Offset) == 0 {
+		req.AutoACK = true
+	}
 
 	t1 := time.Duration(req.Timeout) * time.Second
 	pReq := &tips.PullReq{
 		SubName: c.Param("subname"),
 		Topic:   c.Param("topic"),
 		Limit:   req.Limit,
-		OffAck:  req.OffAck,
+		AutoACK: req.AutoACK,
 		Offset:  req.Offset,
 	}
 	ctx, cancel := context.WithTimeout(t.ctx, t1)

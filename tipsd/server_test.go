@@ -113,11 +113,11 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assert.Len(t, strings.Split(body, ","), 10)
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(`{}`))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(`{"autoack":true}`))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 1, "0")
 
-	method := fmt.Sprintf(`{"ack":true,"index":"%s","limit":3}`, EndMessageID(body))
+	method := fmt.Sprintf(`{"autoack":false,"offset":"%s","limit":3}`, EndMessageID(body))
 	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "3")
@@ -125,7 +125,7 @@ func TestNormal(t *testing.T) {
 	code, body = makeRequest(t, url+"/v1/messages/ack/t1/s1/"+EndMessageID(body), "POST", nil)
 	assertCodeOK(t, code)
 
-	method = fmt.Sprintf(`{"limit":3}`)
+	method = fmt.Sprintf(`{"autoack":true,"limit":3}`)
 	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "6")
@@ -134,7 +134,6 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "shot")
 
-	method = fmt.Sprintf(`{"limit":3}`)
 	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
@@ -145,7 +144,7 @@ func TestNormal(t *testing.T) {
 	// fmt.Println(body)
 	//TODO
 
-	method = fmt.Sprintf(`{"limit":3}`)
+	method = fmt.Sprintf(`{"autoack":true,"limit":3}`)
 	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
