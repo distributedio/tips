@@ -11,8 +11,10 @@ import (
 	"time"
 
 	rolling "github.com/arthurkiller/rollingWriter"
+	"github.com/meitu/titan/metrics"
 	"github.com/shafreeck/configo"
 	"github.com/shafreeck/continuous"
+	"github.com/shafreeck/tips"
 	"github.com/shafreeck/tips/conf"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
@@ -48,28 +50,27 @@ func main() {
 		os.Exit(1)
 	}
 
-	/*
-		store, err := db.Open(&config.Server.Tikv)
-		if err != nil {
-			zap.L().Fatal("open db failed", zap.Error(err))
-			os.Exit(1)
-		}
-	*/
+	tips, err := tips.NewTips(config.Server.Tikv.PdAddrs)
+	if err != nil {
+		zap.L().Fatal("open db failed", zap.Error(err))
+		os.Exit(1)
+	}
+
+	serv := NewServer(&config.Server, tips)
+	svr := metrics.NewServer(&config.Status)
 
 	writer, err := Writer(config.Logger.Path, config.Logger.TimeRotate, config.Logger.Compress)
 	if err != nil {
 		zap.L().Fatal("create writer for continuous failed", zap.Error(err))
 	}
 	cont := continuous.New(continuous.LoggerOutput(writer), continuous.PidFile(config.PIDFileName))
-	/*
-		if err := cont.AddServer(serv, &continuous.ListenOn{Network: "tcp", Address: config.Server.Listen}); err != nil {
-			zap.L().Fatal("add tips server failed:", zap.Error(err))
-		}
+	if err := cont.AddServer(serv, &continuous.ListenOn{Network: "tcp", Address: config.Server.Listen}); err != nil {
+		zap.L().Fatal("add tips server failed:", zap.Error(err))
+	}
 
-		if err := cont.AddServer(svr, &continuous.ListenOn{Network: "tcp", Address: config.Status.Listen}); err != nil {
-			zap.L().Fatal("add statues server failed:", zap.Error(err))
-		}
-	*/
+	if err := cont.AddServer(svr, &continuous.ListenOn{Network: "tcp", Address: config.Status.Listen}); err != nil {
+		zap.L().Fatal("add statues server failed:", zap.Error(err))
+	}
 
 	if err := cont.Serve(); err != nil {
 		zap.L().Fatal("run server failed:", zap.Error(err))
