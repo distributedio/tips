@@ -12,7 +12,7 @@ type Pubsub interface {
 	Destroy(ctx context.Context, topic string) (err error)
 
 	Publish(ctx context.Context, msg []string, topic string) (msgids []string, err error)
-	Ack(ctx context.Context, msgids []string, topic string, subName string) (err error)
+	Ack(ctx context.Context, msgids string, topic string, subName string) (err error)
 
 	Subscribe(ctx context.Context, subName string, topic string) (sub *Subscription, err error)
 	Unsubscribe(ctx context.Context, subName string, topic string) (err error)
