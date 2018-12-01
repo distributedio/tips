@@ -25,7 +25,7 @@ type Pubsub interface {
 	Seek(cxt context.Context, name string) (index int64, err error)
 }
 
-func MockPubsub() Pubsub {
+func MockPubsub() (Pubsub, error) {
 	ps, err := pubsub.MockOpen(path)
 	if err != nil {
 		return nil, err
