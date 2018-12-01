@@ -58,6 +58,12 @@ func (offset *Offset) String() string {
 	return fmt.Sprintf("%v-%v", offset.TS, offset.Index)
 }
 
+// Next 返回大于当前Offset的一个Key
+func (offset *Offset) Next() []byte {
+	return append(offset.Bytes(), 0)
+}
+
+// OffsetFromBytes 从二进制数据解析Offset
 func OffsetFromBytes(d []byte) *Offset {
 	ts := DecodeInt64(d[:8])
 	idx := DecodeInt64(d[8:])
@@ -182,10 +188,10 @@ func (txn *Transaction) GetTopic(name string) (*Topic, error) {
 	return topic, nil
 }
 
-func SubscriptionKey(topic, sub string) []byte {
+func SubscriptionKey(topic *Topic, sub string) []byte {
 	var key []byte
 	key = append(key, 'S', ':')
-	key = append(key, []byte(topic)...)
+	key = append(key, topic.ObjectID...)
 	key = append(key, ':')
 	key = append(key, []byte(sub)...)
 	return key
@@ -200,7 +206,7 @@ type Subscription struct {
 
 // CreateSubscritpion 创建一个Subscription
 func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription, error) {
-	key := SubscriptionKey(t.Name, name)
+	key := SubscriptionKey(t, name)
 
 	val, err := txn.t.Get(key)
 	if err != nil {
@@ -230,13 +236,13 @@ func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription
 
 // DeleteSubscription 删除一个Subscription
 func (txn *Transaction) DeleteSubscription(t *Topic, name string) error {
-	key := SubscriptionKey(t.Name, name)
+	key := SubscriptionKey(t, name)
 	return txn.t.Delete(key)
 }
 
 // GetSubscription 返回对应Subscription信息
 func (txn *Transaction) GetSubscription(t *Topic, name string) (*Subscription, error) {
-	key := SubscriptionKey(t.Name, name)
+	key := SubscriptionKey(t, name)
 
 	val, err := txn.t.Get(key)
 	if err != nil {
@@ -258,7 +264,7 @@ func (txn *Transaction) GetSubscription(t *Topic, name string) (*Subscription, e
 func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
 	var subscriptions []*Subscription
 
-	prefix := SubscriptionKey(t.Name, "")
+	prefix := SubscriptionKey(t, "")
 	iter, err := txn.t.Seek(prefix)
 	if err != nil {
 		return nil, err
@@ -277,8 +283,21 @@ func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
 	return subscriptions, nil
 }
 
+// UpdateSubscription 更新存储中Subscription的内容，可用来更新Offset
+func (txn *Transaction) UpdateSubscription(t *Topic, s *Subscription) error {
+	key := SubscriptionKey(t, s.Name)
+
+	val, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	return txn.t.Set(key, val)
+}
+
 // MessageID 唯一标识一个消息
-type MessageID *Offset
+type MessageID struct {
+	*Offset
+}
 
 // Message 代表一个消息对象
 type Message struct {
@@ -310,7 +329,7 @@ func (txn *Transaction) Append(topic *Topic, messages ...*Message) ([]MessageID,
 		if err := txn.t.Set(key, data); err != nil {
 			return nil, err
 		}
-		mids = append(mids, offset)
+		mids = append(mids, MessageID{offset})
 	}
 	return mids, nil
 }
@@ -331,7 +350,7 @@ func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) 
 		if err := json.Unmarshal(iter.Value(), msg); err != nil {
 			return err
 		}
-		if !handler(offset, msg) {
+		if !handler(MessageID{offset}, msg) {
 			break
 		}
 		if err := iter.Next(); err != nil {
