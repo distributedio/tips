@@ -59,8 +59,10 @@ func (offset *Offset) String() string {
 }
 
 // Next 返回大于当前Offset的一个Key
-func (offset *Offset) Next() []byte {
-	return append(offset.Bytes(), 0)
+func (offset *Offset) Next() *Offset {
+	o := *offset
+	o.Index++
+	return &o
 }
 
 // OffsetFromBytes 从二进制数据解析Offset
@@ -360,4 +362,72 @@ func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) 
 		}
 	}
 	return nil
+}
+
+// Snapshot 是对Subscription的一个快照
+type Snapshot struct {
+	Subscription *Subscription
+}
+
+// SnapshotKey 生成一个用来索引Snapshot的Key
+func SnapshotKey(t *Topic, s *Subscription, name string) []byte {
+	var key []byte
+	key = append(key, 'S', 'S', ':')
+	key = append(key, t.ObjectID...)
+	key = append(key, ':')
+	if s != nil {
+		key = append(key, s.Name...)
+		key = append(key, ':')
+		key = append(key, []byte(name)...)
+	}
+	return key
+}
+
+// CreateSnapshot 为Subscription创建一个快照
+func (txn *Transaction) CreateSnapshot(topic *Topic, subscription *Subscription, name string) (*Snapshot, error) {
+	key := SnapshotKey(topic, subscription, name)
+
+	val, err := txn.t.Get(key)
+	if err != nil {
+		if !kv.IsErrNotFound(err) {
+			return nil, err
+		}
+		snapshot := &Snapshot{
+			Subscription: subscription,
+		}
+		data, err := json.Marshal(snapshot)
+		if err != nil {
+			return nil, err
+		}
+		if err := txn.t.Set(key, data); err != nil {
+			return nil, err
+		}
+		return snapshot, nil
+	}
+
+	snapshot := &Snapshot{}
+	if err := json.Unmarshal(val, snapshot); err != nil {
+		return nil, err
+	}
+
+	return snapshot, nil
+}
+
+// GetSnapshot 获取一个订阅快照
+func (txn *Transaction) GetSnapshot(topic *Topic, subscription *Subscription, name string) (*Snapshot, error) {
+	key := SnapshotKey(topic, subscription, name)
+	val, err := txn.t.Get(key)
+	if err != nil {
+		if !kv.IsErrNotFound(err) {
+			return nil, err
+		}
+		return nil, ErrNotFound
+	}
+
+	snapshot := &Snapshot{}
+	if err := json.Unmarshal(val, snapshot); err != nil {
+		return nil, err
+	}
+
+	return snapshot, nil
 }
