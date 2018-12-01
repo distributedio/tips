@@ -5,19 +5,24 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/pingcap/tidb/kv"
 	"github.com/pingcap/tidb/store/tikv"
+	"github.com/satori/go.uuid"
 )
 
 /* Key encoding format
 *  T:{name} // topic
-*  S:{name} // subscription
+*  S:{topic}:{name} // subscription
 *  SS:{name} // snapshot
 *  M:{topic}{offset} // message
 *
  */
+
+var ErrNotFound = errors.New("not found")
 
 // Offset 表示一个消息在一个Topic中的位置
 type Offset struct {
@@ -112,9 +117,39 @@ type Topic struct {
 	CreatedAt int64
 }
 
+// UUID 生成全局唯一ID
+func UUID() []byte { return uuid.NewV4().Bytes() }
+
 // CreateTopic 创建一个Topic，如果Topic已经存在则返回当前的Topic
-func (txn *Transaction) CreateTopic(t *Topic) error {
-	return nil
+func (txn *Transaction) CreateTopic(name string) (*Topic, error) {
+	key := TopicKey(name)
+
+	val, err := txn.t.Get(key)
+	if err != nil {
+		if !kv.IsErrNotFound(err) {
+			return nil, err
+		}
+		topic := &Topic{
+			Name:      name,
+			ObjectID:  UUID(),
+			CreatedAt: time.Now().UnixNano(),
+		}
+		data, err := json.Marshal(topic)
+		if err != nil {
+			return nil, err
+		}
+		if err := txn.t.Set(key, data); err != nil {
+			return nil, err
+		}
+		return topic, nil
+	}
+
+	topic := &Topic{}
+	if err := json.Unmarshal(val, topic); err != nil {
+		return nil, err
+	}
+
+	return topic, nil
 }
 
 // DeleteTopic 删除一个Topic
@@ -124,13 +159,27 @@ func (txn *Transaction) DeleteTopic(name string) error {
 
 // GetTopic 获取一个Topic的信息
 func (txn *Transaction) GetTopic(name string) (*Topic, error) {
-	return nil, nil
+	key := TopicKey(name)
+
+	val, err := txn.t.Get(key)
+	if err != nil {
+		if !kv.IsErrNotFound(err) {
+			return nil, err
+		}
+		return nil, ErrNotFound
+	}
+
+	topic := &Topic{}
+	if err := json.Unmarshal(val, topic); err != nil {
+		return nil, err
+	}
+
+	return topic, nil
 }
 
 // Subscription 是一个订阅,保存了当前Topic的相关信息
 type Subscription struct {
 	name  string
-	topic *Topic
 	sent  Offset
 	acked Offset
 }
