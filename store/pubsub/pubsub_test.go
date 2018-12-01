@@ -175,9 +175,9 @@ func SetupSubscriptions(topic *Topic) map[string]*Subscription {
 	}
 
 	subscriptions := map[string]*Subscription{
-		"s1": &Subscription{Name: "s1", Sent: Offset{1, 0}, Acked: Offset{1, 0}},
-		"s2": &Subscription{Name: "s2", Sent: Offset{2, 0}, Acked: Offset{2, 0}},
-		"s3": &Subscription{Name: "s3", Sent: Offset{3, 0}, Acked: Offset{3, 0}},
+		"s1": &Subscription{Name: "s1", Sent: &Offset{1, 0}, Acked: &Offset{1, 0}},
+		"s2": &Subscription{Name: "s2", Sent: &Offset{2, 0}, Acked: &Offset{2, 0}},
+		"s3": &Subscription{Name: "s3", Sent: &Offset{3, 0}, Acked: &Offset{3, 0}},
 	}
 
 	for n, s := range subscriptions {
@@ -319,11 +319,11 @@ func TestUpdateSubscription(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
 
-	sentOffsets := make([]Offset, len(subscriptions))
-	ackedOffsets := make([]Offset, len(subscriptions))
+	sentOffsets := make([]*Offset, len(subscriptions))
+	ackedOffsets := make([]*Offset, len(subscriptions))
 	for i := range sentOffsets {
-		sentOffsets[i] = Offset{int64(i), int64(i)}
-		ackedOffsets[i] = Offset{int64(i), int64(i)}
+		sentOffsets[i] = &Offset{int64(i), int64(i)}
+		ackedOffsets[i] = &Offset{int64(i), int64(i)}
 	}
 
 	i := 0
@@ -368,7 +368,7 @@ func TestSnapshotKey(t *testing.T) {
 
 func TestCreateSnapshot(t *testing.T) {
 	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
-	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+	subscription := &Subscription{Name: "sub", Sent: &Offset{time.Now().UnixNano(), 0}, Acked: &Offset{time.Now().UnixNano(), 0}}
 
 	txn, err := ps.Begin()
 	assert.NoError(t, err)
@@ -391,7 +391,7 @@ func TestCreateSnapshot(t *testing.T) {
 	assert.Equal(t, snapshot.Subscription.Acked.String(), got.Subscription.Acked.String())
 
 	// 当Snapshot已经存在时，返回存在的Snapshot
-	subscription2 := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+	subscription2 := &Subscription{Name: "sub", Sent: &Offset{time.Now().UnixNano(), 0}, Acked: &Offset{time.Now().UnixNano(), 0}}
 	snapshot, err = txn.CreateSnapshot(topic, subscription2, "snap")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot)
@@ -412,9 +412,9 @@ func TestCreateSnapshot(t *testing.T) {
 func SetupSnapshots(t *Topic, s *Subscription) map[string]*Snapshot {
 	now := time.Now().UnixNano()
 	snapshots := map[string]*Snapshot{
-		"snap1": &Snapshot{"snap1", &Subscription{Name: "s1", Sent: Offset{now, 0}, Acked: Offset{now, 0}}},
-		"snap2": &Snapshot{"snap2", &Subscription{Name: "s2", Sent: Offset{now + 1, 1}, Acked: Offset{now + 1, 1}}},
-		"snap3": &Snapshot{"snap3", &Subscription{Name: "s3", Sent: Offset{now + 2, 2}, Acked: Offset{now + 2, 2}}},
+		"snap1": &Snapshot{"snap1", &Subscription{Name: "s1", Sent: &Offset{now, 0}, Acked: &Offset{now, 0}}},
+		"snap2": &Snapshot{"snap2", &Subscription{Name: "s2", Sent: &Offset{now + 1, 1}, Acked: &Offset{now + 1, 1}}},
+		"snap3": &Snapshot{"snap3", &Subscription{Name: "s3", Sent: &Offset{now + 2, 2}, Acked: &Offset{now + 2, 2}}},
 	}
 	txn, err := ps.Begin()
 	if err != nil {
@@ -453,7 +453,7 @@ func CleanupSnapshots(t *Topic, s *Subscription, snapshots map[string]*Snapshot)
 
 func TestGetSnapshot(t *testing.T) {
 	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
-	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+	subscription := &Subscription{Name: "sub", Sent: &Offset{time.Now().UnixNano(), 0}, Acked: &Offset{time.Now().UnixNano(), 0}}
 
 	snapshots := SetupSnapshots(topic, subscription)
 
@@ -478,7 +478,7 @@ func TestGetSnapshot(t *testing.T) {
 
 func TestDeleteSnapshot(t *testing.T) {
 	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
-	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+	subscription := &Subscription{Name: "sub", Sent: &Offset{time.Now().UnixNano(), 0}, Acked: &Offset{time.Now().UnixNano(), 0}}
 
 	snapshots := SetupSnapshots(topic, subscription)
 
@@ -500,7 +500,7 @@ func TestDeleteSnapshot(t *testing.T) {
 
 func TestGetSnapshots(t *testing.T) {
 	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
-	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+	subscription := &Subscription{Name: "sub", Sent: &Offset{time.Now().UnixNano(), 0}, Acked: &Offset{time.Now().UnixNano(), 0}}
 
 	snapshots := SetupSnapshots(topic, subscription)
 

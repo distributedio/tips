@@ -221,8 +221,8 @@ func SubscriptionKey(topic *Topic, sub string) []byte {
 // Subscription 是一个订阅,保存了当前Topic的相关信息
 type Subscription struct {
 	Name  string
-	Sent  Offset
-	Acked Offset
+	Sent  *Offset
+	Acked *Offset
 }
 
 // CreateSubscritpion 创建一个Subscription
@@ -236,8 +236,8 @@ func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription
 		}
 		sub := &Subscription{
 			Name:  name,
-			Sent:  Offset{int64(txn.t.StartTS()), 0},
-			Acked: Offset{int64(txn.t.StartTS()), 0},
+			Sent:  &Offset{int64(txn.t.StartTS()), 0},
+			Acked: &Offset{int64(txn.t.StartTS()), 0},
 		}
 		data, err := json.Marshal(sub)
 		if err != nil {
