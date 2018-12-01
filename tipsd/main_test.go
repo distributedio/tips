@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/shafreeck/tips"
 	"github.com/shafreeck/tips/conf"
@@ -21,7 +22,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	server.Serve(lis)
+	go server.Serve(lis)
+	time.Sleep(time.Second)
 	v := m.Run()
 	os.Exit(v)
 }
