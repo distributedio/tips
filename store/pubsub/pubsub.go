@@ -214,7 +214,9 @@ func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription
 			return nil, err
 		}
 		sub := &Subscription{
-			Name: name,
+			Name:  name,
+			Sent:  Offset{int64(txn.t.StartTS()), 0},
+			Acked: Offset{int64(txn.t.StartTS()), 0},
 		}
 		data, err := json.Marshal(sub)
 		if err != nil {

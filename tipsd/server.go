@@ -60,7 +60,8 @@ func (s *Server) initRouter() {
 }
 
 func (s *Server) Serve(lis net.Listener) error {
-	return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
+	// return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
+	return s.httpServer.Serve(lis)
 }
 
 func (s *Server) Stop() error {
