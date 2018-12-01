@@ -15,7 +15,7 @@ type Tips struct {
 	ps *pubsub.Pubsub
 }
 
-func NewTips(path string) (tips Pubsub, err error) {
+func NewTips(path string) (tips *Tips, err error) {
 	ps, err := pubsub.Open(path)
 	if err != nil {
 		return nil, err

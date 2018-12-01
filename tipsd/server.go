@@ -15,7 +15,7 @@ import (
 
 type Server struct {
 	router *gin.Engine
-	pubsub tips.Pubsub
+	pubsub *tips.Tips
 	ctx    context.Context
 	cancel context.CancelFunc
 
@@ -24,7 +24,7 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer(conf *conf.Server, pubsub tips.Pubsub) *Server {
+func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 	router := gin.New()
 
 	ctx, cancel := context.WithCancel(context.Background())

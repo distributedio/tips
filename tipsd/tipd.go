@@ -88,10 +88,12 @@ func (t *Server) Publish(c *gin.Context) {
 
 //Ack 回复消息ack 禁止msgids为空
 func (t *Server) Ack(c *gin.Context) {
-	msgids := c.QueryArray("msgids")
+	msgid := c.Param("msgid")
+	subName := c.Param("subname")
+	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	err := t.pubsub.Ack(ctx, msgids)
+	err := t.pubsub.Ack(ctx, msgid, topic, subName)
 	if err != nil {
 		// if err == keyNotFound {
 		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
@@ -275,13 +277,15 @@ func (t *Server) GetSnapshots(c *gin.Context) {
 //禁止那么 为空
 func (t *Server) Seek(c *gin.Context) {
 	name := c.Query("name")
+	subName := c.Param("subname")
+	topic := c.Param("topic")
 	if len(name) == 0 {
 		c.JSON(http.StatusBadRequest, "name is not null")
 		return
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	_, err := t.pubsub.Seek(ctx, name)
+	_, err := t.pubsub.Seek(ctx, name, subName, topic)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
