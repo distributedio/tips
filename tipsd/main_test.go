@@ -13,6 +13,8 @@ import (
 
 var addr = "127.0.0.1:12345"
 
+var url = "http://127.0.0.1:12345"
+
 func TestMain(m *testing.M) {
 	var conf *conf.Server
 	pubsub, _ := tips.MockPubsub()

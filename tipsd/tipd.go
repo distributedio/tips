@@ -9,12 +9,14 @@ import (
 )
 
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字
-func (t *Server) CreateTopic(c *gin.Context) {
+func (s *Server) CreateTopic(c *gin.Context) {
 	topic := c.Param("topic")
 	if len(topic) == 0 {
 		topic = GenName()
 	}
-	if err := t.pubsub.CreateTopic(t.ctx, topic); err != nil {
+	ctx, cancel := context.WithCancel(s.ctx)
+	defer cancel()
+	if err := s.pubsub.CreateTopic(ctx, topic); err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -33,7 +35,7 @@ func (t *Server) Topic(c *gin.Context) {
 
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	subName, err := t.pubsub.Topic(ctx, topic)
+	msg, err := t.pubsub.Topic(ctx, topic)
 	if err != nil {
 		// if err == keyNotFound {
 		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
@@ -42,8 +44,7 @@ func (t *Server) Topic(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	//TODO subName
-	c.JSON(http.StatusBadRequest, subName)
+	c.JSON(http.StatusOK, msg)
 }
 
 //Destroy 销毁topic
@@ -68,19 +69,24 @@ func (t *Server) Destroy(c *gin.Context) {
 //msgids 返回的序列和下发消息序列保持一直
 //禁止 topic 和 msgs 未空
 func (t *Server) Publish(c *gin.Context) {
-	msgs := c.QueryArray("messages")
-	topic := c.Query("topic")
-	if len(topic) == 0 {
+	pub := &struct {
+		Topic    string
+		Messages []string
+	}{}
+	if err := c.BindJSON(pub); err != nil {
+		c.JSON(http.StatusBadRequest, "parse failure")
+	}
+	if len(pub.Topic) == 0 {
 		c.JSON(http.StatusBadRequest, "topic is not null")
 		return
 	}
-	if len(msgs) == 0 {
+	if len(pub.Messages) == 0 {
 		c.JSON(http.StatusBadRequest, "msgs is not null")
 		return
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	msgids, err := t.pubsub.Publish(ctx, msgs, topic)
+	msgids, err := t.pubsub.Publish(ctx, pub.Messages, pub.Topic)
 	if err != nil {
 		// if err == keyNotFound {
 		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
@@ -112,12 +118,12 @@ func (t *Server) Ack(c *gin.Context) {
 //Subscribe 指定topic 和 subscription 订阅关系
 //禁止topic 和subscition 为空
 func (t *Server) Subscribe(c *gin.Context) {
-	subName := c.Query("subName")
+	subName := c.Param("subname")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subname is not null")
 		return
 	}
-	topic := c.Query("topic")
+	topic := c.Param("topic")
 	if len(topic) == 0 {
 		c.JSON(http.StatusBadRequest, "topic is not null")
 		return
@@ -163,7 +169,7 @@ func (t *Server) Unsubscribe(c *gin.Context) {
 //禁止subname 为空
 //返回 TODO
 func (t *Server) Subscription(c *gin.Context) {
-	subName := c.Query("subName")
+	subName := c.Param("subname")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subname is not null")
 		return

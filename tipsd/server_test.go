@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"crypto/tls"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,8 +23,11 @@ func assertCodeBadRequest(t testing.TB, code int) {
 func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int, string) {
 	req, err := http.NewRequest(method, url, reader)
 	require.NoError(t, err, "Error constructing %s request.", method)
-
-	res, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ClientAuth: tls.NoClientCert},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Do(req)
 	require.NoError(t, err, "Error making %s request.", method)
 	defer res.Body.Close()
 
@@ -51,13 +54,36 @@ func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int
 //14.删除快照
 //15.销毁topic
 func TestNormal(t *testing.T) {
-	code, body := makeRequest(t, "/v1/topics/topic-normal", "PUT", nil)
+	code, body := makeRequest(t, url+"/v1/topics/topic-normal", "PUT", nil)
 	assertCodeOK(t, code)
-	fmt.Println(body)
-	code, body = makeRequest(t, "/v1/messages/topic", "POST", strings.NewReader(`{"topic":"/v1/topics/topic-normal","messages":["h"]}`))
+	assert.Contains(t, body, "topic-normal")
+
+	code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["h"]}`))
 	assertCodeOK(t, code)
-	fmt.Println(body)
-	//TODO body
+	//校验长度
+	// assert.Contains(t, body, "topic-normal")
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "PUT", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "0")
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal", "GET", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "topic-normal")
+
+	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "GET", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "topic-normal")
+
+	/*
+		code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["0","1","2","3","4","5","6","7","8","9"]}`))
+		assertCodeOK(t, code)
+		assert.Contains(t, body, "topic-normal")
+
+		code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal", "POST", nil)
+		assertCodeOK(t, code)
+		assert.Contains(t, body, "topic-normal")
+	*/
 }
 
 //1.非法订阅
