@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -22,10 +23,27 @@ func TestMain(m *testing.M) {
 }
 
 func TestEncodeInt64(t *testing.T) {
-	one := EncodeInt64(-8)
-	two := EncodeInt64(-16)
-	t.Logf("%08b\n", one[7])
-	t.Logf("%08b\n", two[7])
+	a := EncodeInt64(1)
+	b := EncodeInt64(2)
+	t.Logf("%08b\n", a[7])
+	t.Logf("%08b\n", b[7])
+	assert.Equal(t, -1, bytes.Compare(a, b))
+
+	a = EncodeInt64(-1)
+	b = EncodeInt64(-2)
+	assert.Equal(t, 1, bytes.Compare(a, b))
+
+	a = EncodeInt64(1)
+	b = EncodeInt64(1)
+	assert.Equal(t, 0, bytes.Compare(a, b))
+
+	a = EncodeInt64(-1)
+	b = EncodeInt64(-1)
+	assert.Equal(t, 0, bytes.Compare(a, b))
+
+	a = EncodeInt64(1)
+	b = EncodeInt64(-1)
+	assert.Equal(t, 1, bytes.Compare(a, b))
 }
 
 func TestTopicKey(t *testing.T) {

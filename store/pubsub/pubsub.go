@@ -34,7 +34,7 @@ type Offset struct {
 func EncodeInt64(v int64) []byte {
 	var buf bytes.Buffer
 	if v < 0 {
-		v = -v
+		v = int64(uint64(v) & 0x7FFFFFFFFFFFFFFF)
 	} else if v > 0 {
 		v = int64(uint64(v) | 0x8000000000000000)
 	}
@@ -49,6 +49,8 @@ func DecodeInt64(b []byte) int64 {
 	v := int64(binary.BigEndian.Uint64(b))
 	if v < 0 {
 		v = int64(uint64(v) & 0x7FFFFFFFFFFFFFFF)
+	} else if v > 0 {
+		v = int64(uint64(v) | 0x8000000000000000)
 	}
 	return v
 }
