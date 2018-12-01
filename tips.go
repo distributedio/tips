@@ -100,19 +100,21 @@ func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]stri
 	for i := range msg {
 		message[i].Payload = []byte(msg[i])
 	}
-	//type MessageID *Offset
-	//messageID==[]*Offset
-	//messageID[i]==*Offset
+	//type MessageID struct {
+	//    *Offset
+	//}
+	//messageID = []struct{*Offset}   Offset ==type  type Offset struct {    TS    int64 // TS 是从PD获取的时间  Index int64 }
+	//messageID[i]=struct{*Offset}
 	//如果当前的topic存在 则调用Append接口将消息存储到对应的topic下
 	// f func(topic *pubsub.Topic, messages ...*pubsub.Message) ([]pubsub.MessageID, error)i
 	messageID, err := txn.Append(t, message...)
 	if err != nil {
 		return nil, err
 	}
-	//	MessageID := make([]string, len(messageID))
-	//for i := range messageID {
-	//	MessageID = append(MessageID, messageID[i].)
-	//	}
+	MessageID := make([]string, len(messageID))
+	for i := range messageID {
+		MessageID = append(MessageID, messageID[i].String())
+	}
 	return nil, nil
 }
 
