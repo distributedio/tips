@@ -28,10 +28,11 @@ func NewTips(path string) (tips *Tips, err error) {
 
 //创建一个topic
 func (ti *Tips) CreateTopic(cxt context.Context, topic string) (err error) {
-	if txn, err := ti.ps.Begin(); err != nil {
+	txn, err := ti.ps.Begin()
+	if err != nil {
 		return err
 	}
-	if err = txn.CreateTopic(topic); err != nil {
+	if _, err = txn.CreateTopic(topic); err != nil {
 		return err
 	}
 	if err = txn.Commit(cxt); err != nil {
@@ -41,39 +42,30 @@ func (ti *Tips) CreateTopic(cxt context.Context, topic string) (err error) {
 
 }
 
-//查询当前topic的信息
-func (ti *Tips) GetTopic(ctx context.Context) (topic *Topic, err error) {
-	if txn, err := ti.ps.Begin(); err != nil {
-		return nil, err
-	}
-	if topic, err := txn.GetTopic(topic); err != nil {
-		return nil, err
-	}
-	if err = txn.Commit(ctx); err != nil {
-		return nil, err
-	}
-	return topic, nil
-}
-
 //查看当前topic订阅信息
-func (ti *Tips) Topic(cxt context.Context, topic string) (topic *Topic, err error) {
-	if txn, err := ti.ps.Begin(); err != nil {
-		return nil, err
-	}
-	topic, err := txn.GetTopic(topic)
+func (ti *Tips) Topic(ctx context.Context, name string) (topic *Topic, err error) {
+	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
+	t, err := txn.GetTopic(name)
+	if err != nil {
+		return nil, err
+	}
+	topic.CreatedAt = t.CreatedAt
+	topic.Name = t.Name
+	topic.ObjectID = t.ObjectID
+
 	if err = txn.Commit(ctx); err != nil {
 		return nil, err
 	}
 	return topic, nil
-
 }
 
 //销毁一个topic
-func (ti *Tips) Destroy(cxt context.Context, topic string) (err error) {
-	if txn, err := ti.ps.Begin(); err != nil {
+func (ti *Tips) Destroy(ctx context.Context, topic string) (err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
 		return err
 	}
 	if err = txn.DeleteTopic(topic); err != nil {
@@ -86,59 +78,23 @@ func (ti *Tips) Destroy(cxt context.Context, topic string) (err error) {
 }
 
 func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) (msgids []string, err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 
 func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (index int64, err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) (err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 func (ti *Tips) Subscription(cxt context.Context, subName string) (topic string, err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 
 }
 func (ti *Tips) Pull(cxt context.Context, subName string, index, limit int64, ack bool) (messages []string, offset int64, err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 
 func (ti *Tips) CreateSnapshots(cxt context.Context, name string, subName string) (index64 int, err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 func (ti *Tips) DeleteSnapshots(cxt context.Context, name string, subName string) (err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
 func (ti *Tips) Seek(cxt context.Context, name string) (index int64, err error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return err
-	}
 }
