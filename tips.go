@@ -293,6 +293,39 @@ func (ti *Tips) DeleteSnapshots(ctx context.Context, SnapName string, subName st
 	}
 	return nil
 }
-func (ti *Tips) Seek(ctx context.Context, name string) (int64, error) {
-	return 0, nil
+func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic string) (*Subscription, error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return nil, err
+	}
+	//查看当前topic是否存在
+	t, err := txn.GetTopic(topic)
+	//如果当前的topic不存在，那么返回错误
+	if err != nil {
+		return nil, err
+	}
+	//获取Subscription
+	sub, err := txn.GetSubscription(t, subName)
+	if err != nil {
+		return nil, err
+	}
+
+	//获取snapshot
+	snap, err := txn.GetSnapshot(t, sub, SnapName)
+	if err != nil {
+		return nil, err
+	}
+	sub.Acked = snap.Subscription.Acked
+	sub.Sent = snap.Subscription.Sent
+
+	err = txn.UpdateSubscription(t, sub)
+	if err != nil {
+		return nil, err
+	}
+	if err = txn.Commit(ctx); err != nil {
+		return nil, err
+	}
+	subscription := &Subscription{}
+	subscription.Subscription = *sub
+	return subscription, nil
 }

@@ -22,7 +22,7 @@ type Pubsub interface {
 	CreateSnapshots(ctx context.Context, SnapName string, subName string, topic string) (snapshot *Snapshot, err error)
 	GetSnapshot(ctx context.Context, SnapName string, subName string, topic string) (snapshot *Snapshot, err error)
 	DeleteSnapshots(ctx context.Context, Snapname string, subName string, topic string) (err error)
-	Seek(ctx context.Context, name string) (index int64, err error)
+	Seek(ctx context.Context, SnapName string, subName string, topic string) (sub *Subscription, err error)
 }
 
 func MockPubsub() (Pubsub, error) {
