@@ -273,13 +273,16 @@ func (t *Server) GetSnapshots(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "subName is not null")
 		return
 	}
-	ctx, cancel := context.WithCancel(t.ctx)
-	defer cancel()
-	_, err := t.pubsub.GetSnapshots(ctx, subName)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
+	/*
+		ctx, cancel := context.WithCancel(t.ctx)
+		defer cancel()
+
+			_, err := t.pubsub.GetSnapshots(ctx, subName)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, err.Error())
+				return
+			}
+	*/
 	//TODO struct
 }
 
