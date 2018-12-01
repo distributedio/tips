@@ -26,11 +26,11 @@ type Pubsub interface {
 }
 
 func MockPubsub() (Pubsub, error) {
-	ps, err := pubsub.MockOpen(path)
+	ps, err := pubsub.MockOpen("")
 	if err != nil {
 		return nil, err
 	}
 	return &Tips{
-		ps: ps,
+		ps: &ps,
 	}, nil
 }
