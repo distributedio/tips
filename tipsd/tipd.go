@@ -10,7 +10,7 @@ import (
 
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字
 func (t *Server) CreateTopic(c *gin.Context) {
-	topic := c.Query("topic")
+	topic := c.Param("topic")
 	if len(topic) == 0 {
 		topic = GenName()
 	}
@@ -25,7 +25,7 @@ func (t *Server) CreateTopic(c *gin.Context) {
 //Topic 查询topic 订阅信息
 //禁止 topic 为空
 func (t *Server) Topic(c *gin.Context) {
-	topic := c.Query("topic")
+	topic := c.Param("topic")
 	if len(topic) == 0 {
 		c.JSON(http.StatusBadRequest, "topic is not null")
 		return
@@ -49,7 +49,7 @@ func (t *Server) Topic(c *gin.Context) {
 //Destroy 销毁topic
 //禁止 topic 为空
 func (t *Server) Destroy(c *gin.Context) {
-	topic := c.Query("topic")
+	topic := c.Param("topic")
 	if len(topic) == 0 {
 		c.JSON(http.StatusBadRequest, "topic is not null")
 		return

@@ -7,63 +7,71 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shafreeck/tips"
+	"github.com/shafreeck/tips/conf"
 	"github.com/twinj/uuid"
 )
 
 type Server struct {
-	router   *gin.Engine
-	pubsub   Pubsub
-	ctx      context.Context
-	cancel   context.CancelFunc
-	certFile string
-	keyFile  string
-	addr     string
-	*http.Server
+	router *gin.Engine
+	pubsub tips.Pubsub
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	certFile   string
+	keyFile    string
+	httpServer *http.Server
 }
 
-func NewServer(addr string) *Server {
-	var pubsub Pubsub
+func NewServer(conf *conf.Server, pubsub tips.Pubsub) *Server {
 	router := gin.New()
-	router.NoRoute(func(c *gin.Context) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &Server{
+		ctx:        ctx,
+		cancel:     cancel,
+		router:     router,
+		pubsub:     pubsub,
+		httpServer: &http.Server{Handler: router},
+	}
+	s.initRouter()
+	return s
+}
+
+func (s *Server) initRouter() {
+	s.router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"Code": 404, "Reason": "thord: Page not found. Resource you request may not exist."})
 	})
-	ctx, cancel := context.WithCancel(context.Background())
-	t := &Server{
-		ctx:    ctx,
-		cancel: cancel,
-		router: router,
-		pubsub: pubsub,
-	}
-	router.GET("/v1/topic", t.CreateTopic)
-	router.GET("/v1/topic/subscription", t.Topic)
-	router.GET("/v1/topic", t.Destroy)
+	s.router.PUT("/v1/topics/:topic", s.CreateTopic)
+	s.router.GET("/v1/topics/:topic", s.Topic)
+	s.router.DELETE("/v1/topics/:topic", s.Destroy)
 
-	router.GET("/v1/topic", t.Publish)
-	router.GET("/v1/ack", t.Ack)
+	s.router.Post("/v1/messages/topic", s.Publish)
+	s.router.Post("/v1/messages/ack", s.Ack)
 
-	router.GET("/v1/subscription", t.Subscribe)
-	router.GET("/v1/subscription", t.Unsubscribe)
-	router.GET("/v1/subscription", t.Subscription)
-	router.GET("/v1/subscription", t.Pull)
+	s.router.PUT("/v1/subscriptions/:subname/:topic", s.Subscribe)
+	s.router.DELETE("/v1/subscriptions/:subname/:topic", s.Unsubscribe)
+	s.router.GET("/v1/subscriptions/:subname", s.Subscription)
+	s.router.POST("/v1/subscriptions/:subname", s.Pull)
 
-	router.GET("/v1/snapshots", t.CreateSnapshots)
-	router.GET("/v1/snapshots", t.GetSnapshots)
-	router.GET("/v1/snapshots", t.DeleteSnapshots)
-	return t
+	s.router.PUT("/v1/snapshots/:name/:subname", s.CreateSnapshots)
+	s.router.DELETE("/v1/snapshots/:name/:subname", s.DeleteSnapshots)
+	s.router.POST("/v1/snapshots/:name", s.Seek)
 }
 
-func (t *Server) Serve(lis net.Listener) error {
-	return t.ServeTLS(lis, t.certFile, t.keyFile)
+func (s *Server) Serve(lis net.Listener) error {
+	return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
 }
 
-func (t *Server) Stop() error {
-	return t.Server.Close()
+func (s *Server) Stop() error {
+	s.cancel()
+	return s.httpServer.Close()
 }
 
 func (s *Server) GracefulStop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	return s.Server.Shutdown(ctx)
+	return s.httpServer.Shutdown(ctx)
 }
 
 var (

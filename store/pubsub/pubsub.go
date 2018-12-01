@@ -181,26 +181,99 @@ func (txn *Transaction) GetTopic(name string) (*Topic, error) {
 	return topic, nil
 }
 
+func SubscriptionKey(topic, sub string) []byte {
+	var key []byte
+	key = append(key, 'S', ':')
+	key = append(key, []byte(topic)...)
+	key = append(key, ':')
+	key = append(key, []byte(sub)...)
+	return key
+}
+
 // Subscription 是一个订阅,保存了当前Topic的相关信息
 type Subscription struct {
-	name  string
-	sent  Offset
-	acked Offset
+	Name  string
+	Sent  Offset
+	Acked Offset
 }
 
 // CreateSubscritpion 创建一个Subscription
-func (txn *Transaction) CreateSubscription(name string, t *Topic) error {
-	return nil
+func (txn *Transaction) CreateSubscription(t *Topic, name string) (*Subscription, error) {
+	key := SubscriptionKey(t.Name, name)
+
+	val, err := txn.t.Get(key)
+	if err != nil {
+		if !kv.IsErrNotFound(err) {
+			return nil, err
+		}
+		sub := &Subscription{
+			Name: name,
+		}
+		data, err := json.Marshal(sub)
+		if err != nil {
+			return nil, err
+		}
+		if err := txn.t.Set(key, data); err != nil {
+			return nil, err
+		}
+		return sub, nil
+	}
+
+	sub := &Subscription{}
+	if err := json.Unmarshal(val, sub); err != nil {
+		return nil, err
+	}
+
+	return sub, nil
 }
 
 // DeleteSubscription 删除一个Subscription
-func (txn *Transaction) DeleteSubscription(name string) error {
-	return nil
+func (txn *Transaction) DeleteSubscription(t *Topic, name string) error {
+	key := SubscriptionKey(t.Name, name)
+	return txn.t.Delete(key)
 }
 
 // GetSubscription 返回对应Subscription信息
-func (txn *Transaction) GetSubscription(name string) (*Subscription, error) {
-	return nil, nil
+func (txn *Transaction) GetSubscription(t *Topic, name string) (*Subscription, error) {
+	key := SubscriptionKey(t.Name, name)
+
+	val, err := txn.t.Get(key)
+	if err != nil {
+		if !kv.IsErrNotFound(err) {
+			return nil, err
+		}
+		return nil, ErrNotFound
+	}
+
+	sub := &Subscription{}
+	if err := json.Unmarshal(val, sub); err != nil {
+		return nil, err
+	}
+
+	return sub, nil
+}
+
+// GetSubscriptions 返回Topic下所有的订阅关系
+func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
+	var subscriptions []*Subscription
+
+	prefix := SubscriptionKey(t.Name, "")
+	iter, err := txn.t.Seek(prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	for iter.Valid() && iter.Key().HasPrefix(prefix) {
+		sub := &Subscription{}
+		if err := json.Unmarshal(iter.Value(), sub); err != nil {
+			return nil, err
+		}
+		subscriptions = append(subscriptions, sub)
+		if err := iter.Next(); err != nil {
+			return nil, err
+		}
+	}
+	return subscriptions, nil
 }
 
 // Message 代表一个消息对象

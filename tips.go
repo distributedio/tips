@@ -17,7 +17,11 @@ type Subscription struct {
 }
 
 func NewTips(path string) (tips *Tips, err error) {
+<<<<<<< HEAD
 	ps, err := pubsub.Open(path)
+=======
+	ps, err = NewPubsub(path)
+>>>>>>> 849b0838ead2f3d9c787548f556c5570c3dc1acb
 	if err != nil {
 		return nil, err
 	}
