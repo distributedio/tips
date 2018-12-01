@@ -246,3 +246,24 @@ func TestDeleteSubscription(t *testing.T) {
 	}
 	assert.NoError(t, txn.Commit(context.Background()))
 }
+
+func TestGetSubscriptions(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscriptions := SetupSubscriptions(topic)
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	subs, err := txn.GetSubscriptions(topic)
+	assert.NoError(t, err)
+	assert.NotNil(t, subs)
+
+	assert.Equal(t, len(subscriptions), len(subs))
+	for _, got := range subs {
+		s := subscriptions[got.Name]
+		assert.Equal(t, s.Sent.String(), got.Sent.String())
+		assert.Equal(t, s.Acked.String(), got.Acked.String())
+	}
+
+	CleanupSubscriptions(topic, subscriptions)
+}
