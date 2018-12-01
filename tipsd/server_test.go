@@ -96,7 +96,7 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "topic-normal")
 
-	code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["h"]}`))
+	code, body = makeRequest(t, url+"/v1/messages/topics/topic-normal", "POST", strings.NewReader(`{"messages":["h"]}`))
 	assertCodeOK(t, code)
 	//校验长度
 	assert.Len(t, strings.Split(body, ","), 1)
@@ -109,7 +109,7 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "topic-normal")
 
-	code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["0","1","2","3","4","5","6","7","8","9"]}`))
+	code, body = makeRequest(t, url+"/v1/messages/topics/topic-normal", "POST", strings.NewReader(`{"messages":["0","1","2","3","4","5","6","7","8","9"]}`))
 	assertCodeOK(t, code)
 	assert.Len(t, strings.Split(body, ","), 10)
 
@@ -122,8 +122,7 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "3")
 
-	method = fmt.Sprintf(`{"msgid":"%s","subname":"subname-normal","topic":"topic-normal"}`, EndMessageID(body))
-	code, body = makeRequest(t, url+"/v1/messages/ack", "POST", strings.NewReader(method))
+	code, body = makeRequest(t, url+"/v1/messages/ack/topic-normal/subname-normal/"+EndMessageID(body), "POST", nil)
 	assertCodeOK(t, code)
 
 	method = fmt.Sprintf(`{"limit":3}`)
@@ -193,7 +192,7 @@ func TestPull(t *testing.T) {
 	assert.Contains(t, body, "0")
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["h"]}`))
+		code, body = makeRequest(t, url+"/v1/messages/topics/topic-normal", "POST", strings.NewReader(`{"messages":["h"]}`))
 		assertCodeOK(t, code)
 	}()
 

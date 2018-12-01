@@ -57,16 +57,12 @@ func (t *Server) Destroy(c *gin.Context) {
 //msgids 返回的序列和下发消息序列保持一直
 //禁止 topic 和 msgs 未空
 func (t *Server) Publish(c *gin.Context) {
+	topic := c.Param("topic")
 	pub := &struct {
-		Topic    string
 		Messages []string
 	}{}
 	if err := c.BindJSON(pub); err != nil {
 		fail(c, http.StatusBadRequest, err)
-		return
-	}
-	if len(pub.Topic) == 0 {
-		fail(c, http.StatusBadRequest, errors.New("topic is not null"))
 		return
 	}
 	if len(pub.Messages) == 0 {
@@ -75,7 +71,7 @@ func (t *Server) Publish(c *gin.Context) {
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	msgids, err := t.pubsub.Publish(ctx, pub.Messages, pub.Topic)
+	msgids, err := t.pubsub.Publish(ctx, pub.Messages, topic)
 	if err != nil {
 		if ErrNotFound(err) {
 			fail(c, http.StatusNotFound, err)
@@ -89,18 +85,12 @@ func (t *Server) Publish(c *gin.Context) {
 
 //Ack 回复消息ack 禁止msgids为空
 func (t *Server) Ack(c *gin.Context) {
-	req := struct {
-		Msgid   string
-		SubName string
-		Topic   string
-	}{}
-	if err := c.BindJSON(&req); err != nil {
-		fail(c, http.StatusBadRequest, err)
-		return
-	}
+	subName := c.Param("subname")
+	topic := c.Param("topic")
+	msgid := c.Param("msgid")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	err := t.pubsub.Ack(ctx, req.Msgid, req.Topic, req.SubName)
+	err := t.pubsub.Ack(ctx, msgid, topic, subName)
 	if err != nil {
 		if ErrNotFound(err) {
 			fail(c, http.StatusNotFound, err)
