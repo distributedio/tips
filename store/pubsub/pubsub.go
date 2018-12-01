@@ -11,7 +11,6 @@ import (
 
 	"github.com/pingcap/tidb/kv"
 	"github.com/pingcap/tidb/store/tikv"
-	"github.com/satori/go.uuid"
 )
 
 /* Key encoding format
