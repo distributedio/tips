@@ -17,10 +17,12 @@ type Server struct {
 	cancel   context.CancelFunc
 	certFile string
 	keyFile  string
+	addr     string
 	*http.Server
 }
 
-func NewServer(pubsub Pubsub) *Server {
+func NewServer(addr string) *Server {
+	var pubsub Pubsub
 	router := gin.New()
 	router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"Code": 404, "Reason": "thord: Page not found. Resource you request may not exist."})
