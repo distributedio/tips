@@ -104,3 +104,14 @@ func TestGetTopic(t *testing.T) {
 
 	CleanupTopics(topics)
 }
+
+func TestDeleteTopic(t *testing.T) {
+	topics := SetupTopics()
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+	for name := range topics {
+		assert.NoError(t, txn.DeleteTopic(name))
+	}
+}

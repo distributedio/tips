@@ -154,7 +154,12 @@ func (txn *Transaction) CreateTopic(name string) (*Topic, error) {
 
 // DeleteTopic 删除一个Topic
 func (txn *Transaction) DeleteTopic(name string) error {
-	return nil
+	topic, err := txn.GetTopic(name)
+	if err != nil {
+		return err
+	}
+
+	return gc(MessageKey(topic, nil))
 }
 
 // GetTopic 获取一个Topic的信息
@@ -203,6 +208,17 @@ func (txn *Transaction) GetSubscription(name string) (*Subscription, error) {
 type Message struct {
 	ID      string
 	Payload []byte
+}
+
+// MessageKey 根据提供的Offset构建一个Key，用来索引消息
+func MessageKey(topic *Topic, offset *Offset) []byte {
+	var key []byte
+	key = append(key, 'M', ':')
+	key = append(key, topic.ObjectID...)
+	if offset != nil {
+		key = append(key, offset.Bytes()...)
+	}
+	return key
 }
 
 // Append 将消息添加到Topic
