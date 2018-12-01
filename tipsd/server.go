@@ -40,8 +40,9 @@ func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 }
 
 func (s *Server) initRouter() {
+	// s.router.Use(AccessLoggerFunc(zap.L()), gin.Recovery())
 	s.router.NoRoute(func(c *gin.Context) {
-		c.JSON(404, gin.H{"Code": 404, "Reason": "thord: Page not found. Resource you request may not exist."})
+		c.JSON(http.StatusNotFound, gin.H{"Reason": "tips: Page not found. Resource you request may not exist."})
 	})
 	s.router.PUT("/v1/topics/:topic", s.CreateTopic)
 	s.router.GET("/v1/topics/:topic", s.Topic)
