@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,8 +51,12 @@ func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int
 //14.删除快照
 //15.销毁topic
 func TestNormal(t *testing.T) {
-	code, body := makeRequest()
+	code, body := makeRequest(t, "/v1/topics/topic-normal", "PUT", nil)
 	assertCodeOK(t, code)
+	fmt.Println(body)
+	code, body = makeRequest(t, "/v1/messages/topic", "POST", strings.NewReader(`{"topic":"/v1/topics/topic-normal","messages":["h"]}`))
+	assertCodeOK(t, code)
+	fmt.Println(body)
 	//TODO body
 }
 
