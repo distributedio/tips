@@ -188,6 +188,14 @@ func (ti *Tips) Pull(cxt context.Context, subName string, topic string, index, l
 	if err != nil {
 		return nil, 0, err
 	}
+   //查看当前topic是否存在
+    t, err := txn.GetTopic(topic)
+    //如果当前的topic不存在，那么返回错误
+    if err != nil {
+        return err
+    }
+
+
 
 	return nil, 0, nil
 }
@@ -201,3 +209,20 @@ func (ti *Tips) DeleteSnapshots(cxt context.Context, name string, subName string
 func (ti *Tips) Seek(cxt context.Context, name string) (int64, error) {
 	return 0, nil
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
