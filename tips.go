@@ -10,7 +10,7 @@ type Tips struct {
 	ps *Pubsub
 }
 
-func New(path string) (tips *Tips, err error) {
+func NewTips(path string) (tips *Tips, err error) {
 	ps, err = NewPubsub(path)
 	if err != nil {
 		return nil, err
