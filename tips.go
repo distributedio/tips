@@ -15,7 +15,7 @@ type Tips struct {
 	ps *pubsub.Pubsub
 }
 
-func NewTips(path string) (tips Pubsub, err error) {
+func NewTips(path string) (tips *Tips, err error) {
 	ps, err := pubsub.Open(path)
 	if err != nil {
 		return nil, err
@@ -388,5 +388,4 @@ func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic
 	subscription := &Subscription{}
 	subscription.Subscription = *sub
 	return subscription, nil
->>>>>>> 0e65ec8595d44d48707905296b1d8ccb6de4f7a4
 }
