@@ -48,7 +48,7 @@ func (s *Server) initRouter() {
 	s.router.DELETE("/v1/topics/:topic", s.Destroy)
 
 	s.router.POST("/v1/messages/topic", s.Publish)
-	// s.router.POST("/v1/messages/t/ack", s.Ack)
+	s.router.POST("/v1/messages/ack", s.Ack)
 
 	s.router.PUT("/v1/subscriptions/:subname/:topic", s.Subscribe)
 	s.router.DELETE("/v1/subscriptions/:subname/:topic", s.Unsubscribe)

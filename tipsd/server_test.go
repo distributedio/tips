@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,6 +20,25 @@ func assertCodeOK(t testing.TB, code int) {
 
 func assertCodeBadRequest(t testing.TB, code int) {
 	assert.Equal(t, http.StatusBadRequest, code, "Unexpected response status code.")
+}
+
+func assertBodyLen(t testing.TB, body string, llen int, payload string) {
+	msgs := []*struct {
+		Payload []byte
+		ID      string
+	}{}
+	json.Unmarshal([]byte(body), &msgs)
+	assert.Len(t, msgs, llen)
+	assert.Equal(t, string(msgs[len(msgs)-1].Payload), payload)
+}
+
+func EndMessageID(body string) string {
+	msgs := []*struct {
+		Payload []byte
+		ID      string
+	}{}
+	json.Unmarshal([]byte(body), &msgs)
+	return msgs[len(msgs)-1].ID
 }
 
 func assertCodeNotFound(t testing.TB, code int) {
@@ -42,25 +62,25 @@ func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int
 	return res.StatusCode, string(body)
 }
 
-//1.创建topic
-//2.发送消息失败 ==== 无人订阅
-//3.创建订阅关系
-//4.查询订阅关系
-//5.查询topic 订阅关系
-//6.发送消息 ===== 10
-//7.拉去消息1条
-//7.拉去消息3 条
+//创建topic
+//发送消息失败 ==== 无人订阅
+//创建订阅关系
+//查询订阅关系
+//查询topic 订阅关系
+//发送消息 ===== 10
+//拉去消息1条
+//拉去消息3 条
 //回复ack
-//8.拉去消息3 条
-//8.创建snapshot
-//8.拉去消息3 条
-//9.获取snapshot
-//10.继续拉取消息
-//11.查找快照位置
-//11.继续快照位置拉取消息
-//13.发送消息失败 ==== 无人订阅
-//14.删除快照
-//15.销毁topic
+//拉去消息3 条
+//创建snapshot
+//拉去消息3 条
+//获取snapshot
+//继续拉取消息
+//查找快照位置
+//继续快照位置拉取消息
+//发送消息失败 ==== 无人订阅
+//删除快照
+//销毁topic
 func TestNormal(t *testing.T) {
 	code, body := makeRequest(t, url+"/v1/topics/topic-normal", "PUT", nil)
 	assertCodeOK(t, code)
@@ -85,25 +105,37 @@ func TestNormal(t *testing.T) {
 
 	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(`{}`))
 	assertCodeOK(t, code)
-	fmt.Println(body)
-	//TODO
-	// assert.Contains(t, body, "topic-normal")
+	assertBodyLen(t, body, 1, "0")
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(`{"ack":true,"limit":3}`))
+	method := fmt.Sprintf(`{"ack":true,"index":"%s","limit":3}`, EndMessageID(body))
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
-	fmt.Println(body)
-	/*
-		//TODO
-		// assert.Contains(t, body, "topic-normal")
-		//TOACK
-		code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(body))
-		assertCodeOK(t, code)
-		assert.Len(t, strings.Split(body, ","), 10)
+	assertBodyLen(t, body, 3, "3")
 
-	*/
+	method = fmt.Sprintf(`{"msgid":"%s","subname":"subname-normal","topic":"topic-normal"}`, EndMessageID(body))
+	code, body = makeRequest(t, url+"/v1/messages/ack", "POST", strings.NewReader(method))
+	assertCodeOK(t, code)
+
+	method = fmt.Sprintf(`{"limit":3}`)
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	assertCodeOK(t, code)
+	assertBodyLen(t, body, 3, "6")
+
 	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "PUT", nil)
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "shot")
+
+	method = fmt.Sprintf(`{"limit":3}`)
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	assertCodeOK(t, code)
+	assertBodyLen(t, body, 3, "9")
+
+	//TODO seek
+
+	method = fmt.Sprintf(`{"limit":3}`)
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	assertCodeOK(t, code)
+	assertBodyLen(t, body, 3, "9")
 
 	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "DELETE", nil)
 	assertCodeOK(t, code)

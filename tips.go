@@ -19,7 +19,8 @@ type PullReq struct {
 	SubName string
 	Topic   string
 	Limit   int64
-	Ack     bool
+	OffAck  bool
+	Offset  string
 }
 
 type Topic struct {
@@ -166,7 +167,7 @@ func (ti *Tips) Ack(ctx context.Context, msgid string, topic string, subName str
 	if err != nil {
 		return err
 	}
-	s.Acked = *pubsub.OffsetFromString(msgid)
+	s.Acked = pubsub.OffsetFromString(msgid)
 	err = txn.UpdateSubscription(t, s)
 	if err != nil {
 		return err
@@ -273,9 +274,18 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		return true
 	}
 
+	if req.OffAck {
+		sub.Acked = pubsub.OffsetFromString(req.Offset)
+	}
 	if err = txn.Scan(t, sub.Acked.Next(), scan); err != nil {
 		return nil, err
 	}
+
+	if !req.OffAck {
+		sub.Acked = pubsub.OffsetFromString(messages[len(messages)-1].ID)
+	}
+	sub.Sent = pubsub.OffsetFromString(messages[len(messages)-1].ID)
+	txn.UpdateSubscription(t, sub)
 
 	if err = txn.Commit(ctx); err != nil {
 		return nil, err

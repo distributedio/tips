@@ -61,7 +61,7 @@ func (t *Server) Publish(c *gin.Context) {
 		Messages []string
 	}{}
 	if err := c.BindJSON(pub); err != nil {
-		c.JSON(http.StatusBadRequest, "parse failure")
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	if len(pub.Topic) == 0 {
@@ -88,17 +88,23 @@ func (t *Server) Publish(c *gin.Context) {
 
 //Ack 回复消息ack 禁止msgids为空
 func (t *Server) Ack(c *gin.Context) {
-	msgid := c.Param("msgid")
-	subName := c.Param("subname")
-	topic := c.Param("topic")
+	req := struct {
+		Msgid   string
+		SubName string
+		Topic   string
+	}{}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	err := t.pubsub.Ack(ctx, msgid, topic, subName)
+	err := t.pubsub.Ack(ctx, req.Msgid, req.Topic, req.SubName)
 	if err != nil {
-		// if err == keyNotFound {
-		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
-		// return
-		// }
+		if ErrNotFound(err) {
+			c.JSON(http.StatusNotFound, err.Error())
+			return
+		}
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -176,7 +182,8 @@ func (t *Server) Pull(c *gin.Context) {
 	req := &struct {
 		Limit   int64
 		Timeout int64
-		Ack     bool
+		OffAck  bool
+		Offset  string
 	}{}
 	if err := c.BindJSON(req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
@@ -194,7 +201,8 @@ func (t *Server) Pull(c *gin.Context) {
 		SubName: c.Param("subname"),
 		Topic:   c.Param("topic"),
 		Limit:   req.Limit,
-		Ack:     req.Ack,
+		OffAck:  req.OffAck,
+		Offset:  req.Offset,
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
