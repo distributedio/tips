@@ -14,7 +14,7 @@ var ps *Pubsub
 
 func TestMain(m *testing.M) {
 	var err error
-	ps, err = MockOpen("mocktikv:///tmp/tips/unittest")
+	ps, err = MockOpen("mocktikv://")
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,6 @@ func TestCreateTopic(t *testing.T) {
 	assert.NoError(t, err)
 
 	topic, err := txn.CreateTopic("unittest")
-	t.Log("topic:", topic)
 	assert.NoError(t, err)
 	assert.NoError(t, txn.Commit(context.Background()))
 
@@ -243,7 +242,6 @@ func TestDeleteSubscription(t *testing.T) {
 	assert.NotNil(t, txn)
 
 	for n := range subscriptions {
-		t.Log(string(SubscriptionKey(topic, n)))
 		err := txn.DeleteSubscription(topic, n)
 		assert.NoError(t, err)
 	}
