@@ -366,6 +366,7 @@ func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) 
 
 // Snapshot 是对Subscription的一个快照
 type Snapshot struct {
+	Name         string
 	Subscription *Subscription
 }
 
@@ -393,6 +394,7 @@ func (txn *Transaction) CreateSnapshot(topic *Topic, subscription *Subscription,
 			return nil, err
 		}
 		snapshot := &Snapshot{
+			Name:         name,
 			Subscription: subscription,
 		}
 		data, err := json.Marshal(snapshot)

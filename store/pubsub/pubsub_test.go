@@ -370,9 +370,9 @@ func TestCreateSnapshot(t *testing.T) {
 func SetupSnapshots(t *Topic, s *Subscription) map[string]*Snapshot {
 	now := time.Now().UnixNano()
 	snapshots := map[string]*Snapshot{
-		"snap1": &Snapshot{&Subscription{Name: "s1", Sent: Offset{now, 0}, Acked: Offset{now, 0}}},
-		"snap2": &Snapshot{&Subscription{Name: "s2", Sent: Offset{now + 1, 1}, Acked: Offset{now + 1, 1}}},
-		"snap3": &Snapshot{&Subscription{Name: "s3", Sent: Offset{now + 2, 2}, Acked: Offset{now + 2, 2}}},
+		"snap1": &Snapshot{"snap1", &Subscription{Name: "s1", Sent: Offset{now, 0}, Acked: Offset{now, 0}}},
+		"snap2": &Snapshot{"snap2", &Subscription{Name: "s2", Sent: Offset{now + 1, 1}, Acked: Offset{now + 1, 1}}},
+		"snap3": &Snapshot{"snap3", &Subscription{Name: "s3", Sent: Offset{now + 2, 2}, Acked: Offset{now + 2, 2}}},
 	}
 	txn, err := ps.Begin()
 	if err != nil {
@@ -424,6 +424,7 @@ func TestGetSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, got)
 
+		assert.Equal(t, ss.Name, got.Name)
 		assert.Equal(t, ss.Subscription.Name, got.Subscription.Name)
 		assert.Equal(t, ss.Subscription.Sent.String(), got.Subscription.Sent.String())
 		assert.Equal(t, ss.Subscription.Acked.String(), got.Subscription.Acked.String())
