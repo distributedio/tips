@@ -284,7 +284,9 @@ func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
 }
 
 // MessageID 唯一标识一个消息
-type MessageID *Offset
+type MessageID struct {
+	*Offset
+}
 
 // Message 代表一个消息对象
 type Message struct {
