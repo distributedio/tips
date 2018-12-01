@@ -192,9 +192,10 @@ func TestCreateSubscription(t *testing.T) {
 	got := &Subscription{}
 	assert.NoError(t, json.Unmarshal(val, got))
 
+	offset := &Offset{int64(txn.t.StartTS()), 0}
 	assert.Equal(t, sub.Name, got.Name)
-	assert.Equal(t, "0-0", got.Sent.String())
-	assert.Equal(t, "0-0", got.Acked.String())
+	assert.Equal(t, offset.String(), got.Sent.String())
+	assert.Equal(t, offset.String(), got.Acked.String())
 }
 
 func TestGetSubscription(t *testing.T) {
