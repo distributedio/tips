@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -75,21 +76,10 @@ func (s *Server) GracefulStop() error {
 	return s.httpServer.Shutdown(ctx)
 }
 
-var (
-	NameNotFount = "%s cat not found"
-)
-
 func GenName() string {
 	return uuid.NewV4().String()
 }
 
-func ErrNotFound(c *gin.Context, err error, name string) {
-	// if err == keyNotFound {
-	// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, name))
-	// }
-}
-
-//
 func (t *Server) pull(ctx context.Context, subname string, index, limit int64, ack bool, timeout time.Duration) ([]string, int64, error) {
 	tick := time.Tick(timeout)
 	var msgs []string
@@ -108,4 +98,8 @@ func (t *Server) pull(ctx context.Context, subname string, index, limit int64, a
 		}
 	}
 	return msgs, offset, nil
+}
+
+func ErrNotFound(err error) bool {
+	return strings.Contains(err.Error(), "not found")
 }

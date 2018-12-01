@@ -11,9 +11,6 @@ import (
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字
 func (s *Server) CreateTopic(c *gin.Context) {
 	topic := c.Param("topic")
-	if len(topic) == 0 {
-		topic = GenName()
-	}
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 	if err := s.pubsub.CreateTopic(ctx, topic); err != nil {
@@ -25,22 +22,16 @@ func (s *Server) CreateTopic(c *gin.Context) {
 }
 
 //Topic 查询topic 订阅信息
-//禁止 topic 为空
 func (t *Server) Topic(c *gin.Context) {
 	topic := c.Param("topic")
-	if len(topic) == 0 {
-		c.JSON(http.StatusBadRequest, "topic is not null")
-		return
-	}
-
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
 	msg, err := t.pubsub.Topic(ctx, topic)
 	if err != nil {
-		// if err == keyNotFound {
-		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
-		// return
-		// }
+		if ErrNotFound(err) {
+			c.JSON(http.StatusNotFound, err.Error())
+			return
+		}
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -51,11 +42,6 @@ func (t *Server) Topic(c *gin.Context) {
 //禁止 topic 为空
 func (t *Server) Destroy(c *gin.Context) {
 	topic := c.Param("topic")
-	if len(topic) == 0 {
-		c.JSON(http.StatusBadRequest, "topic is not null")
-		return
-	}
-
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
 	if err := t.pubsub.Destroy(ctx, topic); err != nil {
@@ -88,10 +74,10 @@ func (t *Server) Publish(c *gin.Context) {
 	defer cancel()
 	msgids, err := t.pubsub.Publish(ctx, pub.Messages, pub.Topic)
 	if err != nil {
-		// if err == keyNotFound {
-		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
-		// return
-		// }
+		if ErrNotFound(err) {
+			c.JSON(http.StatusNotFound, err.Error())
+			return
+		}
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
