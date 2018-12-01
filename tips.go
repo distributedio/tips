@@ -78,6 +78,12 @@ func (ti *Tips) Destroy(ctx context.Context, topic string) (err error) {
 }
 
 func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) (msgids []string, err error) {
+	//获取当前topic
+
+	//如果当前的topic不存在，那么返回错误
+
+	//如果当前的topic存在 则进行publish
+
 }
 func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
 }
