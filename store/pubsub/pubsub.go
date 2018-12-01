@@ -58,6 +58,12 @@ func (offset *Offset) String() string {
 	return fmt.Sprintf("%v-%v", offset.TS, offset.Index)
 }
 
+// Next 返回大于当前Offset的一个Key
+func (offset *Offset) Next() []byte {
+	return append(offset.Bytes(), 0)
+}
+
+// OffsetFromBytes 从二进制数据解析Offset
 func OffsetFromBytes(d []byte) *Offset {
 	ts := DecodeInt64(d[:8])
 	idx := DecodeInt64(d[8:])
