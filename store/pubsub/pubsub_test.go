@@ -122,6 +122,52 @@ func TestSubscriptionKey(t *testing.T) {
 	assert.Equal(t, "S::", string(SubscriptionKey("", "")))
 }
 
+func SetupSubscriptions(topic *Topic) map[string]*Subscription {
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	subscriptions := map[string]*Subscription{
+		"s1": &Subscription{Name: "s1", Sent: Offset{1, 0}, Acked: Offset{1, 0}},
+		"s2": &Subscription{Name: "s2", Sent: Offset{2, 0}, Acked: Offset{2, 0}},
+		"s3": &Subscription{Name: "s3", Sent: Offset{3, 0}, Acked: Offset{3, 0}},
+	}
+
+	for n, s := range subscriptions {
+		data, err := json.Marshal(s)
+		if err != nil {
+			panic(err)
+		}
+
+		err = txn.t.Set(SubscriptionKey(topic.Name, n), data)
+		if err != nil {
+			panic(err)
+		}
+	}
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+	return subscriptions
+}
+func CleanupSubscriptions(subscriptions map[string]*Subscription) {
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	for n := range subscriptions {
+		err = txn.t.Delete(SubscriptionKey("unittest", n))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+}
+
 func TestCreateSubscription(t *testing.T) {
 	txn, err := ps.Begin()
 	assert.NoError(t, err)
@@ -146,4 +192,24 @@ func TestCreateSubscription(t *testing.T) {
 	assert.Equal(t, sub.Name, got.Name)
 	assert.Equal(t, "0-0", got.Sent.String())
 	assert.Equal(t, "0-0", got.Acked.String())
+}
+
+func TestGetSubscription(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	subscriptions := SetupSubscriptions(topic)
+	for n, s := range subscriptions {
+		got, err := txn.GetSubscription(topic, n)
+		assert.NoError(t, err)
+		assert.NotNil(t, got)
+
+		assert.Equal(t, s.Name, got.Name)
+		assert.Equal(t, s.Sent.String(), got.Sent.String())
+		assert.Equal(t, s.Acked.String(), got.Acked.String())
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
 }
