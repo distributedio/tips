@@ -122,8 +122,31 @@ func (ti *Tips) Publish(ctx context.Context, msg []string, topic string) ([]stri
 	return MessageID, nil
 }
 
-func (ti *Tips) Ack(ctx context.Context, msgids []string) (err error) {
+func (ti *Tips) Ack(ctx context.Context, msgid string, topic string, subName string) (err error) {
+	txn, err := ti.ps.Begin()
+	if err != nil {
+		return err
+	}
+	//查看当前topic是否存在
+	t, err := txn.GetTopic(topic)
+	//如果当前的topic不存在，那么返回错误
+	if err != nil {
+		return err
+	}
+	s, err := txn.GetSubscription(t, subName)
+	if err != nil {
+		return err
+	}
+	s.Acked = *pubsub.OffsetFromString(msgid)
+	err = txn.UpdateSubscription(t, s)
+	if err != nil {
+		return err
+	}
+	if err = txn.Commit(ctx); err != nil {
+		return err
+	}
 	return nil
+
 }
 
 //Subscribe 创建topic 和 subscription 订阅关系
