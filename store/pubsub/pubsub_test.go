@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -30,7 +31,10 @@ func TestCreateTopic(t *testing.T) {
 	topic, err := txn.CreateTopic("unittest")
 	t.Log("topic:", topic)
 	assert.NoError(t, err)
+	assert.NoError(t, txn.Commit(context.Background()))
 
+	txn, err = ps.Begin()
+	assert.NoError(t, err)
 	val, err := txn.t.Get([]byte("T:unittest"))
 	assert.NoError(t, err)
 
