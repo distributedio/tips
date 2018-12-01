@@ -150,14 +150,14 @@ func SetupSubscriptions(topic *Topic) map[string]*Subscription {
 	}
 	return subscriptions
 }
-func CleanupSubscriptions(subscriptions map[string]*Subscription) {
+func CleanupSubscriptions(topic *Topic, subscriptions map[string]*Subscription) {
 	txn, err := ps.Begin()
 	if err != nil {
 		panic(err)
 	}
 
 	for n := range subscriptions {
-		err = txn.t.Delete(SubscriptionKey("unittest", n))
+		err = txn.t.Delete(SubscriptionKey(topic.Name, n))
 		if err != nil {
 			panic(err)
 		}
@@ -197,11 +197,12 @@ func TestCreateSubscription(t *testing.T) {
 func TestGetSubscription(t *testing.T) {
 	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
 
+	subscriptions := SetupSubscriptions(topic)
+
 	txn, err := ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
 
-	subscriptions := SetupSubscriptions(topic)
 	for n, s := range subscriptions {
 		got, err := txn.GetSubscription(topic, n)
 		assert.NoError(t, err)
@@ -210,6 +211,35 @@ func TestGetSubscription(t *testing.T) {
 		assert.Equal(t, s.Name, got.Name)
 		assert.Equal(t, s.Sent.String(), got.Sent.String())
 		assert.Equal(t, s.Acked.String(), got.Acked.String())
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	CleanupSubscriptions(topic, subscriptions)
+}
+
+func TestDeleteSubscription(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscriptions := SetupSubscriptions(topic)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	for n := range subscriptions {
+		t.Log(string(SubscriptionKey(topic.Name, n)))
+		err := txn.DeleteSubscription(topic, n)
+		assert.NoError(t, err)
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	// 检查是否真的删除
+	txn, err = ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+	for n := range subscriptions {
+		got, err := txn.GetSubscription(topic, n)
+		assert.Equal(t, ErrNotFound, err)
+		assert.Nil(t, got)
 	}
 	assert.NoError(t, txn.Commit(context.Background()))
 }
