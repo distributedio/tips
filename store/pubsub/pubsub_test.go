@@ -115,3 +115,35 @@ func TestDeleteTopic(t *testing.T) {
 		assert.NoError(t, txn.DeleteTopic(name))
 	}
 }
+
+func TestSubscriptionKey(t *testing.T) {
+	assert.Equal(t, "S:unittest:sub", string(SubscriptionKey("unittest", "sub")))
+	assert.Equal(t, "S:unittest:", string(SubscriptionKey("unittest", "")))
+	assert.Equal(t, "S::", string(SubscriptionKey("", "")))
+}
+
+func TestCreateSubscription(t *testing.T) {
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	topic := &Topic{
+		Name:      "unittest",
+		ObjectID:  UUID(),
+		CreatedAt: time.Now().UnixNano(),
+	}
+	sub, err := txn.CreateSubscription(topic, "sub")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub)
+
+	val, err := txn.t.Get(SubscriptionKey("unittest", "sub"))
+	assert.NoError(t, err)
+	assert.NotNil(t, val)
+
+	got := &Subscription{}
+	assert.NoError(t, json.Unmarshal(val, got))
+
+	assert.Equal(t, sub.Name, got.Name)
+	assert.Equal(t, "0-0", got.Sent.String())
+	assert.Equal(t, "0-0", got.Acked.String())
+}
