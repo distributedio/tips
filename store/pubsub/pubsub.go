@@ -85,7 +85,7 @@ func OffsetFromBytes(d []byte) *Offset {
 // OffsetFromString 从字符串解析Offset
 func OffsetFromString(s string) *Offset {
 	offset := &Offset{}
-	fmt.Sscanf(s, "%d-%d", offset.TS, offset.Index)
+	fmt.Sscanf(s, "%d-%d", &offset.TS, &offset.Index)
 	return offset
 }
 
