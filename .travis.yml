@@ -9,4 +9,4 @@ before_install:
 
 script: 
     - go test -v ./... -cover -coverprofile cover.out
-    - $HOME/gopath/bin/goveralls -coverprofile=cover.cov -service=travis-ci
+    - $HOME/gopath/bin/goveralls -coverprofile=cover.out -service=travis-ci
