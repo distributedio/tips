@@ -114,6 +114,19 @@ func TestDeleteTopic(t *testing.T) {
 	for name := range topics {
 		assert.NoError(t, txn.DeleteTopic(name))
 	}
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	// 检查是否真正删除
+	txn, err = ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	for name := range topics {
+		topic, err := txn.GetTopic(name)
+		assert.Equal(t, ErrNotFound, err)
+		assert.Nil(t, topic)
+	}
+
 }
 
 func TestSubscriptionKey(t *testing.T) {

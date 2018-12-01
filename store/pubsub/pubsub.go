@@ -166,8 +166,10 @@ func (txn *Transaction) DeleteTopic(name string) error {
 	if err != nil {
 		return err
 	}
-
-	return gc(MessageKey(topic, nil))
+	if err := gc(MessageKey(topic, nil)); err != nil {
+		return err
+	}
+	return txn.t.Delete(TopicKey(name))
 }
 
 // GetTopic 获取一个Topic的信息
