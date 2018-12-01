@@ -1,0 +1,12 @@
+language: go
+
+go:
+    - "1.11"
+
+before_install:
+    - go get golang.org/x/tools/cmd/cover
+    - go get github.com/mattn/goveralls
+
+script: 
+    - go test -v ./... -cover -coverprofile cover.out
+    - $HOME/gopath/bin/goveralls -coverprofile=cover.cov -service=travis-ci
