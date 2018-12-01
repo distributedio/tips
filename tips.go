@@ -14,12 +14,6 @@ var (
 type Tips struct {
 	ps *pubsub.Pubsub
 }
-type Topic struct {
-	pubsub.Topic
-}
-type Subscription struct {
-	pubsub.Subscription
-}
 
 func NewTips(path string) (tips Pubsub, err error) {
 	ps, err := pubsub.Open(path)
@@ -63,12 +57,7 @@ func (ti *Tips) Topic(cxt context.Context, name string) (*Topic, error) {
 		return nil, err
 	}
 
-<<<<<<< HEAD
-	topic.Topic = *t
-=======
-	//如果存在则返回topic信息
 	topic := &Topic{Topic: *t}
->>>>>>> a899340c7635d36613f2d5b7a6bed82b6ef47a12
 
 	if err = txn.Commit(cxt); err != nil {
 		return nil, err
@@ -183,7 +172,7 @@ func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) e
 //Subscription 查询当前subscription的信息
 //func (ti *Tips) Subscription(cxt context.Context, subName string) (string, error) {
 //Pull 拉取消息
-func (ti *Tips) Pull(cxt context.Context, subName string, topic string, index, limit int64, ack bool) ([]string, int64, error) {
+func (ti *Tips) Pull(cxt context.Context, req *PullReq) ([]string, int64, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, 0, err
