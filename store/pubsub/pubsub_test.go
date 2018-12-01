@@ -115,3 +115,155 @@ func TestDeleteTopic(t *testing.T) {
 		assert.NoError(t, txn.DeleteTopic(name))
 	}
 }
+
+func TestSubscriptionKey(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	var expected []byte
+	expected = append(expected, 'S', ':')
+	expected = append(expected, topic.ObjectID...)
+	expected = append(expected, []byte(":sub")...)
+	assert.Equal(t, expected, SubscriptionKey(topic, "sub"))
+}
+
+func SetupSubscriptions(topic *Topic) map[string]*Subscription {
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	subscriptions := map[string]*Subscription{
+		"s1": &Subscription{Name: "s1", Sent: Offset{1, 0}, Acked: Offset{1, 0}},
+		"s2": &Subscription{Name: "s2", Sent: Offset{2, 0}, Acked: Offset{2, 0}},
+		"s3": &Subscription{Name: "s3", Sent: Offset{3, 0}, Acked: Offset{3, 0}},
+	}
+
+	for n, s := range subscriptions {
+		data, err := json.Marshal(s)
+		if err != nil {
+			panic(err)
+		}
+
+		err = txn.t.Set(SubscriptionKey(topic, n), data)
+		if err != nil {
+			panic(err)
+		}
+	}
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+	return subscriptions
+}
+func CleanupSubscriptions(topic *Topic, subscriptions map[string]*Subscription) {
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	for n := range subscriptions {
+		err = txn.t.Delete(SubscriptionKey(topic, n))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+}
+
+func TestCreateSubscription(t *testing.T) {
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	topic := &Topic{
+		Name:      "unittest",
+		ObjectID:  UUID(),
+		CreatedAt: time.Now().UnixNano(),
+	}
+	sub, err := txn.CreateSubscription(topic, "sub")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub)
+
+	val, err := txn.t.Get(SubscriptionKey(topic, "sub"))
+	assert.NoError(t, err)
+	assert.NotNil(t, val)
+
+	got := &Subscription{}
+	assert.NoError(t, json.Unmarshal(val, got))
+
+	assert.Equal(t, sub.Name, got.Name)
+	assert.Equal(t, "0-0", got.Sent.String())
+	assert.Equal(t, "0-0", got.Acked.String())
+}
+
+func TestGetSubscription(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+
+	subscriptions := SetupSubscriptions(topic)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	for n, s := range subscriptions {
+		got, err := txn.GetSubscription(topic, n)
+		assert.NoError(t, err)
+		assert.NotNil(t, got)
+
+		assert.Equal(t, s.Name, got.Name)
+		assert.Equal(t, s.Sent.String(), got.Sent.String())
+		assert.Equal(t, s.Acked.String(), got.Acked.String())
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	CleanupSubscriptions(topic, subscriptions)
+}
+
+func TestDeleteSubscription(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscriptions := SetupSubscriptions(topic)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	for n := range subscriptions {
+		t.Log(string(SubscriptionKey(topic, n)))
+		err := txn.DeleteSubscription(topic, n)
+		assert.NoError(t, err)
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	// 检查是否真的删除
+	txn, err = ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+	for n := range subscriptions {
+		got, err := txn.GetSubscription(topic, n)
+		assert.Equal(t, ErrNotFound, err)
+		assert.Nil(t, got)
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+}
+
+func TestGetSubscriptions(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscriptions := SetupSubscriptions(topic)
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	subs, err := txn.GetSubscriptions(topic)
+	assert.NoError(t, err)
+	assert.NotNil(t, subs)
+
+	assert.Equal(t, len(subscriptions), len(subs))
+	for _, got := range subs {
+		s := subscriptions[got.Name]
+		assert.Equal(t, s.Sent.String(), got.Sent.String())
+		assert.Equal(t, s.Acked.String(), got.Acked.String())
+	}
+
+	CleanupSubscriptions(topic, subscriptions)
+}
