@@ -197,7 +197,7 @@ func (t *Server) Pull(c *gin.Context) {
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
 	//TODO
-	_, _, err := t.pull(ctx, subName, topic, cursor, limit, ack, t1)
+	_, _, err := t.pull(ctx, subName, topic, limit, ack, t1)
 	if err != nil {
 		// if err == keyNotFound {
 		// c.JSON(http.StatusOK, fmt.Sprintf(NameNotFount, subName))
