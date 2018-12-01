@@ -15,8 +15,40 @@ type Tips struct {
 	ps *pubsub.Pubsub
 }
 
+type PullReq struct {
+	SubName string
+	Topic   string
+	Limit   int64
+	Ack     bool
+}
+
+type Topic struct {
+	pubsub.Topic
+}
+type Subscription struct {
+	pubsub.Subscription
+}
+type Snapshot struct {
+	pubsub.Snapshot
+}
+
+type Message struct {
+	Payload []byte
+	ID      string
+}
+
 func NewTips(path string) (tips *Tips, err error) {
 	ps, err := pubsub.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &Tips{
+		ps: ps,
+	}, nil
+}
+
+func MockTips() (*Tips, error) {
+	ps, err := pubsub.MockOpen("mocktikv://")
 	if err != nil {
 		return nil, err
 	}
