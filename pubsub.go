@@ -7,21 +7,22 @@ import (
 )
 
 type Pubsub interface {
-	CreateTopic(cxt context.Context, topic string) (err error)
-	Topic(cxt context.Context, name string) (topic *Topic, err error)
-	Destroy(cxt context.Context, topic string) (err error)
+	CreateTopic(ctx context.Context, topic string) (err error)
+	Topic(ctx context.Context, name string) (topic *Topic, err error)
+	Destroy(ctx context.Context, topic string) (err error)
 
-	Publish(cxt context.Context, msg []string, topic string) (msgids []string, err error)
-	Ack(cxt context.Context, msgids []string) (err error)
+	Publish(ctx context.Context, msg []string, topic string) (msgids []string, err error)
+	Ack(ctx context.Context, msgids []string) (err error)
 
-	Subscribe(cxt context.Context, subName string, topic string) (sub *Subscription, err error)
-	Unsubscribe(cxt context.Context, subName string, topic string) (err error)
+	Subscribe(ctx context.Context, subName string, topic string) (sub *Subscription, err error)
+	Unsubscribe(ctx context.Context, subName string, topic string) (err error)
 	//Subscription(cxt context.Context, subName string) (topics string, err error) //topics struct
-	Pull(cxt context.Context, req *PullReq) (messages []string, err error)
+	Pull(ctx context.Context, req *PullReq) (messsages []*Message, err error)
 
-	CreateSnapshots(cxt context.Context, name string, subName string) (index64 int, err error)
-	DeleteSnapshots(cxt context.Context, name string, subName string) (err error)
-	Seek(cxt context.Context, name string) (index int64, err error)
+	CreateSnapshots(ctx context.Context, SnapName string, subName string, topic string) (snapshot *Snapshot, err error)
+	GetSnapshot(ctx context.Context, SnapName string, subName string, topic string) (snapshot *Snapshot, err error)
+	DeleteSnapshots(ctx context.Context, Snapname string, subName string, topic string) (err error)
+	Seek(ctx context.Context, name string) (index int64, err error)
 }
 
 func MockPubsub() (Pubsub, error) {
@@ -46,4 +47,12 @@ type Topic struct {
 }
 type Subscription struct {
 	pubsub.Subscription
+}
+type Snapshot struct {
+	pubsub.Snapshot
+}
+
+type Message struct {
+	Payload []byte
+	ID      string
 }

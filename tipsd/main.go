@@ -50,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	tips, err := tips.NewTips(&config.Server.Tikv.Addrs)
+	tips, err := tips.NewTips(config.Server.Tikv.PdAddrs)
 	if err != nil {
 		zap.L().Fatal("open db failed", zap.Error(err))
 		os.Exit(1)

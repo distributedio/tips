@@ -171,13 +171,13 @@ func (t *Server) Subscription(c *gin.Context) {
 //如果没有指定消息拉去超时间，默认1s 超时,超时单位默认为s
 //返回下一次拉去的位置
 func (t *Server) Pull(c *gin.Context) {
-	req := struct {
+	req := &struct {
 		Limit   int64
 		Timeout int64
 		Ack     bool
 	}{}
 	if err := c.BindJSON(req); err != nil {
-		c.JSON(http.StatusBadRequest, "parse failure")
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	if req.Limit <= 0 {
@@ -188,15 +188,15 @@ func (t *Server) Pull(c *gin.Context) {
 	}
 
 	t1 := time.Duration(req.Timeout) * time.Second
-	req := tips.PullReq{
+	pReq := &tips.PullReq{
 		SubName: c.Param("subname"),
 		Topic:   c.Param("topic"),
-		Limit:   limit,
-		Ack:     ack,
+		Limit:   req.Limit,
+		Ack:     req.Ack,
 	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	msgs, msgids, err := t.pull(ctx, req, t1)
+	msgs, err := t.pull(ctx, pReq, t1)
 	if err != nil {
 		if ErrNotFound(err) {
 			c.JSON(http.StatusNotFound, err.Error())
@@ -205,7 +205,7 @@ func (t *Server) Pull(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	//Json
+	c.JSON(http.StatusOK, msgs)
 }
 
 //CreateSnapshots 创建一个时间的点
@@ -213,11 +213,12 @@ func (t *Server) Pull(c *gin.Context) {
 //name 未指定默认，系统自动生成
 //返回创建snapshots名字
 func (t *Server) CreateSnapshots(c *gin.Context) {
-	subName := c.Param("subName")
+	subName := c.Param("subname")
 	name := c.Param("name")
+	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	_, err := t.pubsub.CreateSnapshots(ctx, name, subName)
+	_, err := t.pubsub.CreateSnapshots(ctx, name, subName, topic)
 	if err != nil {
 		if ErrNotFound(err) {
 			c.JSON(http.StatusNotFound, err.Error())
@@ -233,11 +234,16 @@ func (t *Server) CreateSnapshots(c *gin.Context) {
 //禁止name 和subname 为空
 func (t *Server) DeleteSnapshots(c *gin.Context) {
 	name := c.Param("name")
-	subName := c.Param("subName")
+	subName := c.Param("subname")
+	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	err := t.pubsub.DeleteSnapshots(ctx, name, subName)
+	err := t.pubsub.DeleteSnapshots(ctx, name, subName, topic)
 	if err != nil {
+		if ErrNotFound(err) {
+			c.JSON(http.StatusNotFound, err.Error())
+			return
+		}
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -247,7 +253,7 @@ func (t *Server) DeleteSnapshots(c *gin.Context) {
 //GetSnapshots 获取snapshots 配置
 //禁止subname 为空
 func (t *Server) GetSnapshots(c *gin.Context) {
-	subName := c.Query("subName")
+	subName := c.Query("subname")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subName is not null")
 		return

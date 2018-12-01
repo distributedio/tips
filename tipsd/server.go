@@ -48,15 +48,15 @@ func (s *Server) initRouter() {
 	s.router.DELETE("/v1/topics/:topic", s.Destroy)
 
 	s.router.POST("/v1/messages/topic", s.Publish)
-	s.router.POST("/v1/messages/ack", s.Ack)
+	// s.router.POST("/v1/messages/t/ack", s.Ack)
 
 	s.router.PUT("/v1/subscriptions/:subname/:topic", s.Subscribe)
 	s.router.DELETE("/v1/subscriptions/:subname/:topic", s.Unsubscribe)
 	// s.router.GET("/v1/subscriptions/:subname", s.Subscription)
 	s.router.POST("/v1/subscriptions/:subname/:topic", s.Pull)
 
-	s.router.PUT("/v1/snapshots/:name/:subname", s.CreateSnapshots)
-	s.router.DELETE("/v1/snapshots/:name/:subname", s.DeleteSnapshots)
+	s.router.PUT("/v1/snapshots/:name/:subname/:topic", s.CreateSnapshots)
+	s.router.DELETE("/v1/snapshots/:name/:subname/:topic", s.DeleteSnapshots)
 	s.router.POST("/v1/snapshots/:name", s.Seek)
 }
 
@@ -80,23 +80,23 @@ func GenName() string {
 	return uuid.NewV4().String()
 }
 
-func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Duration) ([]string, []int64, error) {
+func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Duration) ([]*tips.Message, error) {
 	tick := time.Tick(timeout)
-	var msgs []string
-	for len(msgs) < int(limit) {
+	var msgs []*tips.Message
+	for len(msgs) < int(req.Limit) {
 		select {
 		case <-tick:
-			return msgs, offset, nil
+			return msgs, nil
 		default:
 			m, err := t.pubsub.Pull(ctx, req)
 			if err != nil {
-				return nil, 0, err
+				return nil, err
 			}
 			msgs = append(msgs, m...)
 		}
 		time.Sleep(time.Millisecond * 100)
 	}
-	return msgs, offset, nil
+	return msgs, nil
 }
 
 func ErrNotFound(err error) bool {
