@@ -51,14 +51,14 @@ func (s *Server) initRouter() {
 	s.router.POST("/v1/messages/topics/:topic", s.Publish)
 	s.router.POST("/v1/messages/ack/:topic/:subname/:msgid", s.Ack)
 
-	s.router.PUT("/v1/subscriptions/:subname/:topic", s.Subscribe)
-	s.router.DELETE("/v1/subscriptions/:subname/:topic", s.Unsubscribe)
+	s.router.PUT("/v1/subscriptions/:topic/:subname", s.Subscribe)
+	s.router.DELETE("/v1/subscriptions/:topic/:subname", s.Unsubscribe)
 	// s.router.GET("/v1/subscriptions/:subname", s.Subscription)
-	s.router.POST("/v1/subscriptions/:subname/:topic", s.Pull)
+	s.router.POST("/v1/subscriptions/:topic/:subname", s.Pull)
 
-	s.router.PUT("/v1/snapshots/:name/:subname/:topic", s.CreateSnapshots)
-	s.router.DELETE("/v1/snapshots/:name/:subname/:topic", s.DeleteSnapshots)
-	s.router.POST("/v1/snapshots/:name/:subname/:topic", s.Seek)
+	s.router.PUT("/v1/snapshots/:topic/:subname/:name", s.CreateSnapshots)
+	s.router.DELETE("/v1/snapshots/:topic/:subname/:name", s.DeleteSnapshots)
+	s.router.POST("/v1/snapshots/:topic/:subname/:name", s.Seek)
 }
 
 func (s *Server) Serve(lis net.Listener) error {

@@ -92,117 +92,117 @@ func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int
 //删除快照
 //销毁topic
 func TestNormal(t *testing.T) {
-	code, body := makeRequest(t, url+"/v1/topics/topic-normal", "PUT", nil)
+	code, body := makeRequest(t, url+"/v1/topics/t1", "PUT", nil)
 	assertCodeOK(t, code)
-	assert.Contains(t, body, "topic-normal")
+	assert.Contains(t, body, "t1")
 
-	code, body = makeRequest(t, url+"/v1/messages/topics/topic-normal", "POST", strings.NewReader(`{"messages":["h"]}`))
+	code, body = makeRequest(t, url+"/v1/messages/topics/t1", "POST", strings.NewReader(`{"messages":["h"]}`))
 	assertCodeOK(t, code)
 	//校验长度
 	assert.Len(t, strings.Split(body, ","), 1)
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "PUT", nil)
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "PUT", nil)
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "0")
 
-	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "GET", nil)
+	code, body = makeRequest(t, url+"/v1/topics/t1", "GET", nil)
 	assertCodeOK(t, code)
-	assert.Contains(t, body, "topic-normal")
+	assert.Contains(t, body, "t1")
 
-	code, body = makeRequest(t, url+"/v1/messages/topics/topic-normal", "POST", strings.NewReader(`{"messages":["0","1","2","3","4","5","6","7","8","9"]}`))
+	code, body = makeRequest(t, url+"/v1/messages/topics/t1", "POST", strings.NewReader(`{"messages":["0","1","2","3","4","5","6","7","8","9"]}`))
 	assertCodeOK(t, code)
 	assert.Len(t, strings.Split(body, ","), 10)
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(`{}`))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(`{}`))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 1, "0")
 
 	method := fmt.Sprintf(`{"ack":true,"index":"%s","limit":3}`, EndMessageID(body))
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "3")
 
-	code, body = makeRequest(t, url+"/v1/messages/ack/topic-normal/subname-normal/"+EndMessageID(body), "POST", nil)
+	code, body = makeRequest(t, url+"/v1/messages/ack/t1/s1/"+EndMessageID(body), "POST", nil)
 	assertCodeOK(t, code)
 
 	method = fmt.Sprintf(`{"limit":3}`)
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "6")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "PUT", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/t1/s1/shot", "PUT", nil)
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "shot")
 
 	method = fmt.Sprintf(`{"limit":3}`)
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "POST", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/t1/s1/shot", "POST", nil)
 	assertCodeOK(t, code)
 	assertSnapBody(t, body, 6)
 	// fmt.Println(body)
 	//TODO
 
 	method = fmt.Sprintf(`{"limit":3}`)
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 0, "0")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "DELETE", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/t1/s1/shot", "DELETE", nil)
 	assertCodeOK(t, code)
 
-	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "DELETE", nil)
+	code, body = makeRequest(t, url+"/v1/topics/t1", "DELETE", nil)
 	assertCodeOK(t, code)
 }
 
 func TestIllagel(t *testing.T) {
-	code, body := makeRequest(t, url+"/v1/messages/topic-normal", "POST", strings.NewReader(`{"topic":"topic-nor","messages":["h"]}`))
+	code, body := makeRequest(t, url+"/v1/messages/topics/t1", "POST", strings.NewReader(`{"topic":"topic-nor","messages":["h"]}`))
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "GET", nil)
+	code, body = makeRequest(t, url+"/v1/topics/t1", "GET", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "GET", nil)
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "GET", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normale/hehe", "POST", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/t1/s1/shot", "POST", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normale/he", "DELETE", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/t1/s1/shot", "DELETE", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 }
 
 func TestPull(t *testing.T) {
-	code, body := makeRequest(t, url+"/v1/topics/topic-normal", "PUT", nil)
+	code, body := makeRequest(t, url+"/v1/topics/t1", "PUT", nil)
 	assertCodeOK(t, code)
-	assert.Contains(t, body, "topic-normal")
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "PUT", nil)
+	assert.Contains(t, body, "t1")
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "PUT", nil)
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "0")
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		code, body = makeRequest(t, url+"/v1/messages/topics/topic-normal", "POST", strings.NewReader(`{"messages":["h"]}`))
+		code, body = makeRequest(t, url+"/v1/messages/topics/t1", "POST", strings.NewReader(`{"messages":["h"]}`))
 		assertCodeOK(t, code)
 	}()
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(`{}`))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(`{}`))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 1, "h")
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "DELETE", nil)
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "DELETE", nil)
 	assertCodeOK(t, code)
 
-	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "DELETE", nil)
+	code, body = makeRequest(t, url+"/v1/topics/t1", "DELETE", nil)
 	assertCodeOK(t, code)
 }
