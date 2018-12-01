@@ -25,7 +25,7 @@ type Pubsub interface {
 }
 
 func MockPubsub() (Pubsub, error) {
-	ps, err := pubsub.MockOpen("")
+	ps, err := pubsub.MockOpen("mocktikv://")
 	if err != nil {
 		return nil, err
 	}
