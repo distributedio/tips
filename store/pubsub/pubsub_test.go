@@ -52,6 +52,27 @@ func TestDecodeInt64(t *testing.T) {
 	assert.Equal(t, int64(0), DecodeInt64(EncodeInt64(0)))
 }
 
+func TestOffsetBytes(t *testing.T) {
+	offset := &Offset{time.Now().UnixNano(), 0}
+	got := OffsetFromBytes(offset.Bytes())
+	assert.Equal(t, offset.TS, got.TS)
+	assert.Equal(t, offset.Index, got.Index)
+}
+
+func TestOffsetString(t *testing.T) {
+	offset := &Offset{time.Now().UnixNano(), 0}
+	got := OffsetFromString(offset.String())
+	assert.Equal(t, offset.TS, got.TS)
+	assert.Equal(t, offset.Index, got.Index)
+}
+
+func TestOffsetNext(t *testing.T) {
+	offset := &Offset{time.Now().UnixNano(), 0}
+	got := offset.Next()
+	assert.Equal(t, offset.TS, got.TS)
+	assert.Equal(t, offset.Index+1, got.Index)
+}
+
 func TestTopicKey(t *testing.T) {
 	assert.Equal(t, string(TopicKey("unittest")), "T:unittest")
 }
