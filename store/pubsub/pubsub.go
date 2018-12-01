@@ -329,7 +329,7 @@ func (txn *Transaction) Append(topic *Topic, messages ...*Message) ([]MessageID,
 		if err := txn.t.Set(key, data); err != nil {
 			return nil, err
 		}
-		mids = append(mids, offset)
+		mids = append(mids, MessageID{offset})
 	}
 	return mids, nil
 }
@@ -350,7 +350,7 @@ func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) 
 		if err := json.Unmarshal(iter.Value(), msg); err != nil {
 			return err
 		}
-		if !handler(offset, msg) {
+		if !handler(MessageID{offset}, msg) {
 			break
 		}
 		if err := iter.Next(); err != nil {
