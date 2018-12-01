@@ -136,6 +136,15 @@ func TestCreateTopic(t *testing.T) {
 	assert.Equal(t, topic.Name, got.Name)
 	assert.Equal(t, topic.ObjectID, got.ObjectID)
 	assert.Equal(t, topic.CreatedAt, got.CreatedAt)
+
+	// 测试Topic已经存在的情况
+	got, err = txn.CreateTopic("unittest")
+	assert.NoError(t, err)
+	assert.NoError(t, txn.Commit(context.Background()))
+
+	assert.Equal(t, topic.Name, got.Name)
+	assert.Equal(t, topic.ObjectID, got.ObjectID)
+	assert.Equal(t, topic.CreatedAt, got.CreatedAt)
 }
 
 func TestGetTopic(t *testing.T) {
@@ -260,6 +269,14 @@ func TestCreateSubscription(t *testing.T) {
 	assert.Equal(t, sub.Name, got.Name)
 	assert.Equal(t, offset.String(), got.Sent.String())
 	assert.Equal(t, offset.String(), got.Acked.String())
+
+	// 测试Subscription已经存在的情况
+	got, err = txn.CreateSubscription(topic, "sub")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub)
+	assert.Equal(t, sub.Name, got.Name)
+	assert.Equal(t, sub.Sent.String(), got.Sent.String())
+	assert.Equal(t, sub.Acked.String(), got.Acked.String())
 }
 
 func TestGetSubscription(t *testing.T) {
