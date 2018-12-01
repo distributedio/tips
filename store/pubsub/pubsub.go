@@ -97,12 +97,22 @@ func (txn *Transaction) Rollback() error {
 	return txn.t.Rollback()
 }
 
-// Topic 是一个保存了Topic信息的对象
-type Topic struct {
-	name string
+// TopicKey 根据Topic的name创建Key
+func TopicKey(name string) []byte {
+	var key []byte
+	key = append(key, 'T', ':')
+	key = append(key, []byte(name)...)
+	return key
 }
 
-// CreateTopic 创建一个Topic
+// Topic 是一个保存了Topic信息的对象
+type Topic struct {
+	Name      string
+	ObjectID  []byte
+	CreatedAt int64
+}
+
+// CreateTopic 创建一个Topic，如果Topic已经存在则返回当前的Topic
 func (txn *Transaction) CreateTopic(t *Topic) error {
 	return nil
 }
