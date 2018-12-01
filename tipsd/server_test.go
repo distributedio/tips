@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shafreeck/tips"
 	"github.com/stretchr/testify/assert"
@@ -181,4 +182,28 @@ func TestIllagel(t *testing.T) {
 	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normale/he", "DELETE", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
+}
+
+func TestPull(t *testing.T) {
+	code, body := makeRequest(t, url+"/v1/topics/topic-normal", "PUT", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "topic-normal")
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "PUT", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "0")
+	go func() {
+		time.Sleep(time.Millisecond * 100)
+		code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["h"]}`))
+		assertCodeOK(t, code)
+	}()
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(`{}`))
+	assertCodeOK(t, code)
+	assertBodyLen(t, body, 1, "h")
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "DELETE", nil)
+	assertCodeOK(t, code)
+
+	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "DELETE", nil)
+	assertCodeOK(t, code)
 }
