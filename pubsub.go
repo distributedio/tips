@@ -12,7 +12,7 @@ type Pubsub interface {
 	Destroy(ctx context.Context, topic string) (err error)
 
 	Publish(ctx context.Context, msg []string, topic string) (msgids []string, err error)
-	Ack(ctx context.Context, msgids []string) (err error)
+	Ack(ctx context.Context, msgids []string, topic string, subName string) (err error)
 
 	Subscribe(ctx context.Context, subName string, topic string) (sub *Subscription, err error)
 	Unsubscribe(ctx context.Context, subName string, topic string) (err error)
@@ -22,10 +22,10 @@ type Pubsub interface {
 	CreateSnapshots(ctx context.Context, SnapName string, subName string, topic string) (snapshot *Snapshot, err error)
 	GetSnapshot(ctx context.Context, SnapName string, subName string, topic string) (snapshot *Snapshot, err error)
 	DeleteSnapshots(ctx context.Context, Snapname string, subName string, topic string) (err error)
-	Seek(ctx context.Context, name string) (index int64, err error)
+	Seek(ctx context.Context, SnapName string, subName string, topic string) (sub *Subscription, err error)
 }
 
-func MockPubsub() (Pubsub, error) {
+func MockTips() (Pubsub, error) {
 	ps, err := pubsub.MockOpen("mocktikv://")
 	if err != nil {
 		return nil, err

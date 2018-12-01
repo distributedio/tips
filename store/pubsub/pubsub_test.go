@@ -491,3 +491,84 @@ func TestGetSnapshots(t *testing.T) {
 
 	CleanupSnapshots(topic, subscription, snapshots)
 }
+
+func SetupMessages(t *Topic) map[string]*Message {
+	now := time.Now().UnixNano()
+	messages := make(map[string]*Message)
+
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	for i := int64(0); i < 3; i++ {
+		msg := &Message{Payload: []byte("hello tips")}
+		offset := &Offset{now + i, i}
+		data, err := json.Marshal(msg)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := txn.t.Set(MessageKey(t, &Offset{now + i, i}), data); err != nil {
+			panic(err)
+		}
+		messages[offset.String()] = msg
+	}
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+	return messages
+}
+
+func CleanupMessages(t *Topic, messages map[string]*Message) {
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+	for o := range messages {
+		if err := txn.t.Delete(MessageKey(t, OffsetFromString(o))); err != nil {
+			panic(err)
+		}
+	}
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+}
+
+func TestAppend(t *testing.T) {
+	now := time.Now().UnixNano()
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: now}
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	messages := make(map[string]*Message)
+	for i := 0; i < 3; i++ {
+		msg := &Message{Payload: []byte("hello tips")}
+		mids, err := txn.Append(topic, msg)
+		assert.NoError(t, err)
+		assert.NotNil(t, mids)
+		assert.Equal(t, 1, len(mids))
+		messages[mids[0].String()] = msg
+	}
+	err = txn.Commit(context.Background())
+	assert.NoError(t, err)
+
+	start := MessageKey(topic, &Offset{now, 0})
+	prefix := MessageKey(topic, nil)
+	iter, err := txn.t.Seek(start)
+	assert.NoError(t, err)
+	assert.NotNil(t, iter)
+
+	for iter.Valid() && iter.Key().HasPrefix(prefix) {
+		got := &Message{}
+		assert.NoError(t, json.Unmarshal(iter.Value(), &got))
+
+		offset := OffsetFromBytes(iter.Key()[len(prefix):])
+		m := messages[offset.String()]
+		assert.Equal(t, m.Payload, got.Payload)
+
+		assert.NoError(t, iter.Next())
+	}
+}

@@ -72,6 +72,13 @@ func OffsetFromBytes(d []byte) *Offset {
 	return &Offset{TS: ts, Index: idx}
 }
 
+// OffsetFromString 从字符串解析Offset
+func OffsetFromString(s string) *Offset {
+	offset := &Offset{}
+	fmt.Sscanf(s, "%d-%d", offset.TS, offset.Index)
+	return offset
+}
+
 // Pubsub 是一个提供了Pub/Sub原语的存储接口
 type Pubsub struct {
 	s kv.Storage
