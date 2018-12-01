@@ -305,3 +305,21 @@ func TestUpdateSubscription(t *testing.T) {
 
 	CleanupSubscriptions(topic, subscriptions)
 }
+
+func TestSnapshotKey(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscription := &Subscription{Name: "sub"}
+	var expected []byte
+	expected = append(expected, 'S', 'S', ':')
+	expected = append(expected, topic.ObjectID...)
+	expected = append(expected, ':')
+	expected = append(expected, []byte(subscription.Name)...)
+	expected = append(expected, []byte(":snap")...)
+	assert.Equal(t, expected, SnapshotKey(topic, subscription, "snap"))
+
+	var prefix []byte
+	prefix = append(prefix, 'S', 'S', ':')
+	prefix = append(prefix, topic.ObjectID...)
+	prefix = append(prefix, ':')
+	assert.Equal(t, prefix, SnapshotKey(topic, nil, ""))
+}

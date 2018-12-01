@@ -361,3 +361,23 @@ func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) 
 	}
 	return nil
 }
+
+// Snapshot 是对Subscription的一个快照
+type Snapshot struct {
+	ExpireAt     int64
+	subscription *Subscription
+}
+
+// SnapshotKey 生成一个用来索引Snapshot的Key
+func SnapshotKey(t *Topic, s *Subscription, name string) []byte {
+	var key []byte
+	key = append(key, 'S', 'S', ':')
+	key = append(key, t.ObjectID...)
+	key = append(key, ':')
+	if s != nil {
+		key = append(key, s.Name...)
+		key = append(key, ':')
+		key = append(key, []byte(name)...)
+	}
+	return key
+}
