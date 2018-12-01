@@ -57,12 +57,10 @@ func (ti *Tips) Topic(cxt context.Context, name string) (*Topic, error) {
 		return nil, err
 	}
 
-	topic := &Topic{Topic: *t}
-
 	if err = txn.Commit(cxt); err != nil {
 		return nil, err
 	}
-	return topic, nil
+	return &Topic{Topic: *t}, nil
 }
 
 //销毁一个topic
@@ -135,6 +133,9 @@ func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (*S
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
+	if err == pubsub.ErrNotFound {
+		return nil, fmt.Errorf(ErrNotFound, "topic")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -146,9 +147,7 @@ func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (*S
 	if err = txn.Commit(cxt); err != nil {
 		return nil, err
 	}
-	sub := &Subscription{}
-	sub.Subscription = *s
-	return sub, nil
+	return &Subscription{Subscription: *s}, nil
 }
 
 //Unsubscribe 指定topic 和 subscription 订阅关系
@@ -159,11 +158,17 @@ func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) e
 	}
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
+	if err == pubsub.ErrNotFound {
+		return fmt.Errorf(ErrNotFound, "topic")
+	}
 	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return err
 	}
 	if err := txn.DeleteSubscription(t, subName); err != nil {
+		return err
+	}
+	if err = txn.Commit(cxt); err != nil {
 		return err
 	}
 	return nil
@@ -173,10 +178,12 @@ func (ti *Tips) Unsubscribe(cxt context.Context, subName string, topic string) e
 //func (ti *Tips) Subscription(cxt context.Context, subName string) (string, error) {
 //Pull 拉取消息
 func (ti *Tips) Pull(cxt context.Context, req *PullReq) ([]string, int64, error) {
-	txn, err := ti.ps.Begin()
-	if err != nil {
-		return nil, 0, err
-	}
+	/*
+		txn, err := ti.ps.Begin()
+		if err != nil {
+			return nil, 0, err
+		}
+	*/
 
 	return nil, 0, nil
 }

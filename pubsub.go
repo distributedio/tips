@@ -17,7 +17,7 @@ type Pubsub interface {
 	Subscribe(cxt context.Context, subName string, topic string) (sub *Subscription, err error)
 	Unsubscribe(cxt context.Context, subName string, topic string) (err error)
 	//Subscription(cxt context.Context, subName string) (topics string, err error) //topics struct
-	Pull(cxt context.Context, req *PullReq) (messages []string, offset int64, err error)
+	Pull(cxt context.Context, req *PullReq) (messages []string, err error)
 
 	CreateSnapshots(cxt context.Context, name string, subName string) (index64 int, err error)
 	DeleteSnapshots(cxt context.Context, name string, subName string) (err error)
@@ -35,11 +35,10 @@ func MockPubsub() (Pubsub, error) {
 }
 
 type PullReq struct {
-	subName string
-	topic   string
-	index   int64
-	limit   int64
-	ack     bool
+	SubName string
+	Topic   string
+	Limit   int64
+	Ack     bool
 }
 
 type Topic struct {

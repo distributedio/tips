@@ -52,8 +52,8 @@ func (s *Server) initRouter() {
 
 	s.router.PUT("/v1/subscriptions/:subname/:topic", s.Subscribe)
 	s.router.DELETE("/v1/subscriptions/:subname/:topic", s.Unsubscribe)
-	s.router.GET("/v1/subscriptions/:subname", s.Subscription)
-	s.router.POST("/v1/subscriptions/:subname", s.Pull)
+	// s.router.GET("/v1/subscriptions/:subname", s.Subscription)
+	s.router.POST("/v1/subscriptions/:subname/:topic", s.Pull)
 
 	s.router.PUT("/v1/snapshots/:name/:subname", s.CreateSnapshots)
 	s.router.DELETE("/v1/snapshots/:name/:subname", s.DeleteSnapshots)
@@ -80,22 +80,21 @@ func GenName() string {
 	return uuid.NewV4().String()
 }
 
-func (t *Server) pull(ctx context.Context, subname string, index, limit int64, ack bool, timeout time.Duration) ([]string, int64, error) {
+func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Duration) ([]string, []int64, error) {
 	tick := time.Tick(timeout)
 	var msgs []string
-	var offset int64
 	for len(msgs) < int(limit) {
 		select {
 		case <-tick:
 			return msgs, offset, nil
 		default:
-			m, i, err := t.pubsub.Pull(ctx, subname, index, limit, ack)
+			m, err := t.pubsub.Pull(ctx, req)
 			if err != nil {
 				return nil, 0, err
 			}
 			msgs = append(msgs, m...)
-			offset = i
 		}
+		time.Sleep(time.Millisecond * 100)
 	}
 	return msgs, offset, nil
 }

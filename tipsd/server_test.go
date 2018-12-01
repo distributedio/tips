@@ -47,13 +47,16 @@ func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int
 //4.查询订阅关系
 //5.查询topic 订阅关系
 //6.发送消息 ===== 10
+//7.拉去消息1条
 //7.拉去消息3 条
+//回复ack
+//8.拉去消息3 条
 //8.创建snapshot
+//8.拉去消息3 条
 //9.获取snapshot
 //10.继续拉取消息
 //11.查找快照位置
 //11.继续快照位置拉取消息
-//12.销毁消息
 //13.发送消息失败 ==== 无人订阅
 //14.删除快照
 //15.销毁topic
@@ -71,35 +74,61 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "0")
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal", "GET", nil)
-	assertCodeOK(t, code)
-	assert.Contains(t, body, "topic-normal")
-
 	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "GET", nil)
 	assertCodeOK(t, code)
 	assert.Contains(t, body, "topic-normal")
 
-	/*
-		code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["0","1","2","3","4","5","6","7","8","9"]}`))
-		assertCodeOK(t, code)
-		assert.Contains(t, body, "topic-normal")
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["0","1","2","3","4","5","6","7","8","9"]}`))
+	assertCodeOK(t, code)
+	assert.Len(t, strings.Split(body, ","), 10)
 
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST")
+	assertCodeOK(t, code)
+	//TODO
+	// assert.Contains(t, body, "topic-normal")
+
+	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "POST", strings.NewReader(`"ack":true,"limit":"3"`))
+	assertCodeOK(t, code)
+	//TODO
+	// assert.Contains(t, body, "topic-normal")
+	//TOACK
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(body))
+	assertCodeOK(t, code)
+	assert.Len(t, strings.Split(body, ","), 10)
+
+	code, body := makeRequest(t, url+"/v1/snapshots/topic-snapshots/subname-topic", "PUT", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "topic-snapshots")
+	/*
 		code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal", "POST", nil)
 		assertCodeOK(t, code)
 		assert.Contains(t, body, "topic-normal")
 	*/
+	code, body := makeRequest(t, url+"/v1/snapshots/topic-snapshots/subname-topic", "DELETE", nil)
+	assertCodeOK(t, code)
+	assert.Contains(t, body, "topic-snapshots")
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "DELETE", nil)
+	assertCodeOK(t, code)
+
+	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "DELETE", nil)
+	assertCodeOK(t, code)
 }
 
 func TestIllagel(t *testing.T) {
-	code, body := makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-nor","messages":["h"]}`))
+	code, body := makeRequest(t, url+"/v1/messages/topic-normal", "POST", strings.NewReader(`{"topic":"topic-nor","messages":["h"]}`))
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/topics/illage", "GET", nil)
+	code, body = makeRequest(t, url+"/v1/topics/topic-normal", "GET", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal", "GET", nil)
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "GET", nil)
 	assertCodeNotFound(t, code)
+	assert.Contains(t, body, "not found")
+
+	code, body := makeRequest(t, url+"/v1/snapshots/topic-snapshots/subname-topic", "POST", nil)
+	assertCodeOK(t, code)
 	assert.Contains(t, body, "not found")
 }
