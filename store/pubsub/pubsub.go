@@ -276,9 +276,11 @@ func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
 	return subscriptions, nil
 }
 
+// MessageID 唯一标识一个消息
+type MessageID *Offset
+
 // Message 代表一个消息对象
 type Message struct {
-	ID      string
 	Payload []byte
 }
 
@@ -294,35 +296,36 @@ func MessageKey(topic *Topic, offset *Offset) []byte {
 }
 
 // Append 将消息添加到Topic
-func (txn *Transaction) Append(topic string, messages ...*Message) error {
-	prefix := []byte(topic)
+func (txn *Transaction) Append(topic *Topic, messages ...*Message) ([]MessageID, error) {
+	var mids []MessageID
 	for i := range messages {
 		offset := &Offset{TS: int64(txn.t.StartTS()), Index: int64(i)}
-		key := append(prefix, offset.Bytes()...)
+		key := MessageKey(topic, offset)
 		data, err := json.Marshal(messages[i])
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := txn.t.Set(key, data); err != nil {
-			return err
+			return nil, err
 		}
+		mids = append(mids, offset)
 	}
-	return nil
+	return mids, nil
 }
 
 // ScanHandler 用来处理每一个消息
-type ScanHandler func(offset *Offset, message *Message) bool
+type ScanHandler func(id MessageID, message *Message) bool
 
 // Scan 首先跳转到Topic对应的offset，之后将所有消息传递给回调函数
-func (txn *Transaction) Scan(topic string, offset *Offset, handler ScanHandler) error {
-	key := append([]byte(topic), offset.Bytes()...)
+func (txn *Transaction) Scan(topic *Topic, offset *Offset, handler ScanHandler) error {
+	key := MessageKey(topic, offset)
 	iter, err := txn.t.Seek(key)
 	if err != nil {
 		return err
 	}
-	for iter.Valid() && iter.Key().HasPrefix([]byte(topic)) {
-		offset := OffsetFromBytes(iter.Key()[len(topic):])
+	for iter.Valid() && iter.Key().HasPrefix([]byte(topic.Name)) {
+		offset := OffsetFromBytes(iter.Key()[len(topic.Name):])
 		msg := &Message{}
 		if err := json.Unmarshal(iter.Value(), msg); err != nil {
 			return err
