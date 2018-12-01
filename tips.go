@@ -19,7 +19,7 @@ type PullReq struct {
 	SubName string
 	Topic   string
 	Limit   int64
-	OffAck  bool
+	AutoACK bool
 	Offset  string
 }
 
@@ -277,7 +277,7 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		return true
 	}
 
-	if req.OffAck {
+	if req.Offset != "" {
 		sub.Acked = pubsub.OffsetFromString(req.Offset)
 	}
 	if err = txn.Scan(t, sub.Acked.Next(), scan); err != nil {
@@ -288,10 +288,10 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		return messages, txn.Commit(ctx)
 	}
 
-	if !req.OffAck {
-		sub.Acked = pubsub.OffsetFromString(messages[len(messages)-1].ID)
-	}
 	sub.Sent = pubsub.OffsetFromString(messages[len(messages)-1].ID)
+	if req.AutoACK {
+		sub.Acked = sub.Sent
+	}
 	txn.UpdateSubscription(t, sub)
 
 	if err = txn.Commit(ctx); err != nil {
