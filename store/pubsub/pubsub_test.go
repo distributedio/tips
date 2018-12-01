@@ -267,3 +267,40 @@ func TestGetSubscriptions(t *testing.T) {
 
 	CleanupSubscriptions(topic, subscriptions)
 }
+
+func TestUpdateSubscription(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscriptions := SetupSubscriptions(topic)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	sentOffsets := make([]Offset, len(subscriptions))
+	ackedOffsets := make([]Offset, len(subscriptions))
+	for i := range sentOffsets {
+		sentOffsets[i] = Offset{int64(i), int64(i)}
+		ackedOffsets[i] = Offset{int64(i), int64(i)}
+	}
+
+	i := 0
+	for _, s := range subscriptions {
+		s.Sent = sentOffsets[i]
+		s.Acked = sentOffsets[i]
+		i++
+
+		assert.NoError(t, txn.UpdateSubscription(topic, s))
+	}
+	subs, err := txn.GetSubscriptions(topic)
+	assert.NoError(t, err)
+	assert.NotNil(t, subs)
+
+	assert.Equal(t, len(subscriptions), len(subs))
+	for _, got := range subs {
+		s := subscriptions[got.Name]
+		assert.Equal(t, s.Sent.String(), got.Sent.String())
+		assert.Equal(t, s.Acked.String(), got.Acked.String())
+	}
+
+	CleanupSubscriptions(topic, subscriptions)
+}

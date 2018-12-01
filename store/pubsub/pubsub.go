@@ -283,6 +283,17 @@ func (txn *Transaction) GetSubscriptions(t *Topic) ([]*Subscription, error) {
 	return subscriptions, nil
 }
 
+// UpdateSubscription 更新存储中Subscription的内容，可用来更新Offset
+func (txn *Transaction) UpdateSubscription(t *Topic, s *Subscription) error {
+	key := SubscriptionKey(t, s.Name)
+
+	val, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	return txn.t.Set(key, val)
+}
+
 // MessageID 唯一标识一个消息
 type MessageID struct {
 	*Offset
