@@ -59,8 +59,10 @@ func (offset *Offset) String() string {
 }
 
 // Next 返回大于当前Offset的一个Key
-func (offset *Offset) Next() []byte {
-	return append(offset.Bytes(), 0)
+func (offset *Offset) Next() *Offset {
+	o := *offset
+	o.Index++
+	return &o
 }
 
 // OffsetFromBytes 从二进制数据解析Offset
