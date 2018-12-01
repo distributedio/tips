@@ -1,4 +1,4 @@
-package tipd
+package main
 
 import (
 	"context"
@@ -8,45 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type tipd struct {
-	router *gin.Engine
-	pubsub Pubsub
-	ctx    context.Context
-	cancel context.CancelFunc
-}
-
-func NewTipd(pubsub Pubsub) *tipd {
-	router := gin.New()
-	router.NoRoute(func(c *gin.Context) {
-		c.JSON(404, gin.H{"Code": 404, "Reason": "thord: Page not found. Resource you request may not exist."})
-	})
-	ctx, cancel := context.WithCancel(context.Background())
-	t := &tipd{
-		ctx:    ctx,
-		cancel: cancel,
-		router: router,
-		pubsub: pubsub,
-	}
-	router.GET("/v1/topic", t.CreateTopic)
-	router.GET("/v1/topic/subscription", t.Topic)
-	router.GET("/v1/topic", t.Destroy)
-
-	router.GET("/v1/topic", t.Publish)
-	router.GET("/v1/ack", t.Ack)
-
-	router.GET("/v1/subscription", t.Subscribe)
-	router.GET("/v1/subscription", t.Unsubscribe)
-	router.GET("/v1/subscription", t.Subscription)
-	router.GET("/v1/subscription", t.Pull)
-
-	router.GET("/v1/snapshots", t.CreateSnapshots)
-	router.GET("/v1/snapshots", t.GetSnapshots)
-	router.GET("/v1/snapshots", t.DeleteSnapshots)
-	return t
-}
-
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字
-func (t *tipd) CreateTopic(c *gin.Context) {
+func (t *Server) CreateTopic(c *gin.Context) {
 	topic := c.Query("topic")
 	if len(topic) == 0 {
 		topic = GenName()
@@ -61,7 +24,7 @@ func (t *tipd) CreateTopic(c *gin.Context) {
 
 //Topic 查询topic 订阅信息
 //禁止 topic 为空
-func (t *tipd) Topic(c *gin.Context) {
+func (t *Server) Topic(c *gin.Context) {
 	topic := c.Query("topic")
 	if len(topic) == 0 {
 		c.JSON(http.StatusBadRequest, "topic is not null")
@@ -85,7 +48,7 @@ func (t *tipd) Topic(c *gin.Context) {
 
 //Destroy 销毁topic
 //禁止 topic 为空
-func (t *tipd) Destroy(c *gin.Context) {
+func (t *Server) Destroy(c *gin.Context) {
 	topic := c.Query("topic")
 	if len(topic) == 0 {
 		c.JSON(http.StatusBadRequest, "topic is not null")
@@ -104,7 +67,7 @@ func (t *tipd) Destroy(c *gin.Context) {
 //Publish 消息下发 支持批量下发,返回下发成功的msgids
 //msgids 返回的序列和下发消息序列保持一直
 //禁止 topic 和 msgs 未空
-func (t *tipd) Publish(c *gin.Context) {
+func (t *Server) Publish(c *gin.Context) {
 	msgs := c.QueryArray("messages")
 	topic := c.Query("topic")
 	if len(topic) == 0 {
@@ -130,7 +93,7 @@ func (t *tipd) Publish(c *gin.Context) {
 }
 
 //Ack 回复消息ack 禁止msgids为空
-func (t *tipd) Ack(c *gin.Context) {
+func (t *Server) Ack(c *gin.Context) {
 	msgids := c.QueryArray("msgids")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
@@ -148,7 +111,7 @@ func (t *tipd) Ack(c *gin.Context) {
 
 //Subscribe 指定topic 和 subscription 订阅关系
 //禁止topic 和subscition 为空
-func (t *tipd) Subscribe(c *gin.Context) {
+func (t *Server) Subscribe(c *gin.Context) {
 	subName := c.Query("subName")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subname is not null")
@@ -175,7 +138,7 @@ func (t *tipd) Subscribe(c *gin.Context) {
 
 //Unsubscribe 指定topic 和 subscription 订阅关系
 //禁止topic 和subscition 为空
-func (t *tipd) Unsubscribe(c *gin.Context) {
+func (t *Server) Unsubscribe(c *gin.Context) {
 	subName := c.Query("subName")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subName is not null")
@@ -199,7 +162,7 @@ func (t *tipd) Unsubscribe(c *gin.Context) {
 //Subscription 查询当前subscription的信息
 //禁止subname 为空
 //返回 TODO
-func (t *tipd) Subscription(c *gin.Context) {
+func (t *Server) Subscription(c *gin.Context) {
 	subName := c.Query("subName")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subname is not null")
@@ -223,7 +186,7 @@ func (t *tipd) Subscription(c *gin.Context) {
 //禁止topic subName 为空,limit 必须大于0
 //如果没有指定消息拉去超时间，默认1s 超时,超时单位默认为s
 //返回下一次拉去的位置
-func (t *tipd) Pull(c *gin.Context) {
+func (t *Server) Pull(c *gin.Context) {
 	subName := c.Query("subName")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subname is not null")
@@ -256,7 +219,7 @@ func (t *tipd) Pull(c *gin.Context) {
 //禁止subname 为空
 //name 未指定默认，系统自动生成
 //返回创建snapshots名字
-func (t *tipd) CreateSnapshots(c *gin.Context) {
+func (t *Server) CreateSnapshots(c *gin.Context) {
 
 	subName := c.Query("subName")
 	if len(subName) == 0 {
@@ -281,7 +244,7 @@ func (t *tipd) CreateSnapshots(c *gin.Context) {
 
 //DeleteSnapshots 删除snapshots
 //禁止name 和subname 为空
-func (t *tipd) DeleteSnapshots(c *gin.Context) {
+func (t *Server) DeleteSnapshots(c *gin.Context) {
 	name := c.Query("name")
 	if len(name) == 0 {
 		c.JSON(http.StatusBadRequest, "name is not null")
@@ -304,7 +267,7 @@ func (t *tipd) DeleteSnapshots(c *gin.Context) {
 
 //GetSnapshots 获取snapshots 配置
 //禁止subname 为空
-func (t *tipd) GetSnapshots(c *gin.Context) {
+func (t *Server) GetSnapshots(c *gin.Context) {
 	subName := c.Query("subName")
 	if len(subName) == 0 {
 		c.JSON(http.StatusBadRequest, "subName is not null")
@@ -322,7 +285,7 @@ func (t *tipd) GetSnapshots(c *gin.Context) {
 
 //Seek 获取订阅通道 snapshots开始位置
 //禁止那么 为空
-func (t *tipd) Seek(c *gin.Context) {
+func (t *Server) Seek(c *gin.Context) {
 	name := c.Query("name")
 	if len(name) == 0 {
 		c.JSON(http.StatusBadRequest, "name is not null")

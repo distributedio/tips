@@ -1,4 +1,4 @@
-package tipd
+package tips
 
 import "context"
 
