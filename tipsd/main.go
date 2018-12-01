@@ -11,11 +11,11 @@ import (
 	"time"
 
 	rolling "github.com/arthurkiller/rollingWriter"
-	"github.com/meitu/titan/metrics"
 	"github.com/shafreeck/configo"
 	"github.com/shafreeck/continuous"
 	"github.com/shafreeck/tips"
 	"github.com/shafreeck/tips/conf"
+	"github.com/shafreeck/tips/metrics"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

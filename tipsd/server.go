@@ -57,7 +57,7 @@ func (s *Server) initRouter() {
 
 	s.router.PUT("/v1/snapshots/:name/:subname/:topic", s.CreateSnapshots)
 	s.router.DELETE("/v1/snapshots/:name/:subname/:topic", s.DeleteSnapshots)
-	s.router.POST("/v1/snapshots/:name", s.Seek)
+	s.router.POST("/v1/snapshots/:name/:subname/:topic", s.Seek)
 }
 
 func (s *Server) Serve(lis net.Listener) error {

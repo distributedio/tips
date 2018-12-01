@@ -281,6 +281,10 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		return nil, err
 	}
 
+	if len(messages) == 0 {
+		return messages, txn.Commit(ctx)
+	}
+
 	if !req.OffAck {
 		sub.Acked = pubsub.OffsetFromString(messages[len(messages)-1].ID)
 	}
@@ -402,21 +406,31 @@ func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic
 	}
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
+	if err == pubsub.ErrNotFound {
+		return nil, fmt.Errorf(ErrNotFound, "topic")
+	}
 	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return nil, err
 	}
 	//获取Subscription
 	sub, err := txn.GetSubscription(t, subName)
+	if err == pubsub.ErrNotFound {
+		return nil, fmt.Errorf(ErrNotFound, "subname")
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	//获取snapshot
 	snap, err := txn.GetSnapshot(t, sub, SnapName)
+	if err == pubsub.ErrNotFound {
+		return nil, fmt.Errorf(ErrNotFound, "snapshot")
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	sub.Acked = snap.Subscription.Acked
 	sub.Sent = snap.Subscription.Sent
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shafreeck/tips"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +23,12 @@ func assertCodeBadRequest(t testing.TB, code int) {
 	assert.Equal(t, http.StatusBadRequest, code, "Unexpected response status code.")
 }
 
+func assertSnapBody(t testing.TB, body string, id int64) {
+	var snap tips.Subscription
+	json.Unmarshal([]byte(body), &snap)
+	assert.Equal(t, snap.Acked.Index, id)
+}
+
 func assertBodyLen(t testing.TB, body string, llen int, payload string) {
 	msgs := []*struct {
 		Payload []byte
@@ -29,7 +36,9 @@ func assertBodyLen(t testing.TB, body string, llen int, payload string) {
 	}{}
 	json.Unmarshal([]byte(body), &msgs)
 	assert.Len(t, msgs, llen)
-	assert.Equal(t, string(msgs[len(msgs)-1].Payload), payload)
+	if llen > 0 {
+		assert.Equal(t, string(msgs[len(msgs)-1].Payload), payload)
+	}
 }
 
 func EndMessageID(body string) string {
@@ -130,12 +139,20 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
 
-	//TODO seek
+	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "POST", nil)
+	assertCodeOK(t, code)
+	assertSnapBody(t, body, 6)
+	// fmt.Println(body)
+	//TODO
 
 	method = fmt.Sprintf(`{"limit":3}`)
 	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "POST", strings.NewReader(method))
+	assertCodeOK(t, code)
+	assertBodyLen(t, body, 0, "0")
 
 	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normal/topic-normal", "DELETE", nil)
 	assertCodeOK(t, code)
@@ -157,11 +174,11 @@ func TestIllagel(t *testing.T) {
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-topic/hehe", "POST", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normale/hehe", "POST", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 
-	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-topic/he", "DELETE", nil)
+	code, body = makeRequest(t, url+"/v1/snapshots/shot/subname-normale/he", "DELETE", nil)
 	assertCodeNotFound(t, code)
 	assert.Contains(t, body, "not found")
 }

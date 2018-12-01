@@ -282,21 +282,20 @@ func (t *Server) GetSnapshots(c *gin.Context) {
 }
 
 //Seek 获取订阅通道 snapshots开始位置
-//禁止那么 为空
 func (t *Server) Seek(c *gin.Context) {
-	name := c.Query("name")
+	name := c.Param("name")
 	subName := c.Param("subname")
 	topic := c.Param("topic")
-	if len(name) == 0 {
-		c.JSON(http.StatusBadRequest, "name is not null")
-		return
-	}
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
-	_, err := t.pubsub.Seek(ctx, name, subName, topic)
+	sub, err := t.pubsub.Seek(ctx, name, subName, topic)
 	if err != nil {
+		if ErrNotFound(err) {
+			c.JSON(http.StatusNotFound, err.Error())
+			return
+		}
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	//TODO struct
+	c.JSON(http.StatusOK, sub)
 }
