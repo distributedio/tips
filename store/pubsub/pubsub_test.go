@@ -323,3 +323,110 @@ func TestSnapshotKey(t *testing.T) {
 	prefix = append(prefix, ':')
 	assert.Equal(t, prefix, SnapshotKey(topic, nil, ""))
 }
+
+func TestCreateSnapshot(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	snapshot, err := txn.CreateSnapshot(topic, subscription, "snap")
+	assert.NoError(t, err)
+	assert.NotNil(t, snapshot)
+	assert.NotNil(t, snapshot.Subscription)
+
+	val, err := txn.t.Get(SnapshotKey(topic, subscription, "snap"))
+	assert.NoError(t, err)
+	assert.NotNil(t, val)
+
+	got := &Snapshot{}
+	assert.NoError(t, json.Unmarshal(val, got))
+
+	assert.Equal(t, snapshot.Subscription.Name, got.Subscription.Name)
+	assert.Equal(t, snapshot.Subscription.Sent.String(), got.Subscription.Sent.String())
+	assert.Equal(t, snapshot.Subscription.Acked.String(), got.Subscription.Acked.String())
+
+	// 当Snapshot已经存在时，返回存在的Snapshot
+	subscription2 := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+	snapshot, err = txn.CreateSnapshot(topic, subscription2, "snap")
+	assert.NoError(t, err)
+	assert.NotNil(t, snapshot)
+
+	val, err = txn.t.Get(SnapshotKey(topic, subscription, "snap"))
+	assert.NoError(t, err)
+	assert.NotNil(t, val)
+
+	got = &Snapshot{}
+	assert.NoError(t, json.Unmarshal(val, got))
+
+	assert.Equal(t, snapshot.Subscription.Name, got.Subscription.Name)
+	assert.Equal(t, snapshot.Subscription.Sent.String(), got.Subscription.Sent.String())
+	assert.Equal(t, snapshot.Subscription.Acked.String(), got.Subscription.Acked.String())
+
+}
+
+func SetupSnapshots(t *Topic, s *Subscription) map[string]*Snapshot {
+	now := time.Now().UnixNano()
+	snapshots := map[string]*Snapshot{
+		"snap1": &Snapshot{&Subscription{Name: "s1", Sent: Offset{now, 0}, Acked: Offset{now, 0}}},
+		"snap2": &Snapshot{&Subscription{Name: "s2", Sent: Offset{now + 1, 1}, Acked: Offset{now + 1, 1}}},
+		"snap3": &Snapshot{&Subscription{Name: "s3", Sent: Offset{now + 2, 2}, Acked: Offset{now + 2, 2}}},
+	}
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+	for n, ss := range snapshots {
+		data, err := json.Marshal(ss)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := txn.t.Set(SnapshotKey(t, s, n), data); err != nil {
+			panic(err)
+		}
+	}
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+	return snapshots
+}
+
+func CleanupSnapshots(t *Topic, s *Subscription, snapshots map[string]*Snapshot) {
+	txn, err := ps.Begin()
+	if err != nil {
+		panic(err)
+	}
+	for n := range snapshots {
+		if err := txn.t.Delete(SnapshotKey(t, s, n)); err != nil {
+			panic(err)
+		}
+	}
+	if err := txn.Commit(context.Background()); err != nil {
+		panic(err)
+	}
+}
+
+func TestGetSnapshot(t *testing.T) {
+	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: time.Now().UnixNano()}
+	subscription := &Subscription{Name: "sub", Sent: Offset{time.Now().UnixNano(), 0}, Acked: Offset{time.Now().UnixNano(), 0}}
+
+	snapshots := SetupSnapshots(topic, subscription)
+
+	txn, err := ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	for n, ss := range snapshots {
+		got, err := txn.GetSnapshot(topic, subscription, n)
+		assert.NoError(t, err)
+		assert.NotNil(t, got)
+
+		assert.Equal(t, ss.Subscription.Name, got.Subscription.Name)
+		assert.Equal(t, ss.Subscription.Sent.String(), got.Subscription.Sent.String())
+		assert.Equal(t, ss.Subscription.Acked.String(), got.Subscription.Acked.String())
+	}
+	assert.NoError(t, txn.Commit(context.Background()))
+}
