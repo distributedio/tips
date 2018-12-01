@@ -20,6 +20,10 @@ func assertCodeBadRequest(t testing.TB, code int) {
 	assert.Equal(t, http.StatusBadRequest, code, "Unexpected response status code.")
 }
 
+func assertCodeNotFound(t testing.TB, code int) {
+	assert.Equal(t, http.StatusNotFound, code, "Unexpected response status code.")
+}
+
 func makeRequest(t testing.TB, url string, method string, reader io.Reader) (int, string) {
 	req, err := http.NewRequest(method, url, reader)
 	require.NoError(t, err, "Error constructing %s request.", method)
@@ -61,7 +65,7 @@ func TestNormal(t *testing.T) {
 	code, body = makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-normal","messages":["h"]}`))
 	assertCodeOK(t, code)
 	//校验长度
-	// assert.Contains(t, body, "topic-normal")
+	assert.Len(t, strings.Split(body, ","), 1)
 
 	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal/topic-normal", "PUT", nil)
 	assertCodeOK(t, code)
@@ -86,11 +90,16 @@ func TestNormal(t *testing.T) {
 	*/
 }
 
-//1.非法订阅
-//2.非法取消订阅
-//3.非法发送消息
-//4.非法拉取消息
-//5.非法销毁消息
 func TestIllagel(t *testing.T) {
+	code, body := makeRequest(t, url+"/v1/messages/topic", "POST", strings.NewReader(`{"topic":"topic-nor","messages":["h"]}`))
+	assertCodeNotFound(t, code)
+	assert.Contains(t, body, "not found")
 
+	code, body = makeRequest(t, url+"/v1/topics/illage", "GET", nil)
+	assertCodeNotFound(t, code)
+	assert.Contains(t, body, "not found")
+
+	code, body = makeRequest(t, url+"/v1/subscriptions/subname-normal", "GET", nil)
+	assertCodeNotFound(t, code)
+	assert.Contains(t, body, "not found")
 }

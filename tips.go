@@ -2,8 +2,13 @@ package tips
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/shafreeck/tips/store/pubsub"
+)
+
+var (
+	ErrNotFound = "%s can not found"
 )
 
 type Tips struct {
@@ -50,15 +55,16 @@ func (ti *Tips) Topic(cxt context.Context, name string) (*Topic, error) {
 	}
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(name)
+	if err == pubsub.ErrNotFound {
+		return nil, fmt.Errorf(ErrNotFound, "topic")
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	//如果存在则返回topic信息
-	topic := &Topic{}
 
-	topic.CreatedAt = t.CreatedAt
-	topic.Name = t.Name
-	topic.ObjectID = t.ObjectID
+	//如果存在则返回topic信息
+	topic := &Topic{Topic: *t}
 
 	if err = txn.Commit(cxt); err != nil {
 		return nil, err
@@ -92,13 +98,19 @@ func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]stri
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
+	if err == pubsub.ErrNotFound {
+		return nil, fmt.Errorf(ErrNotFound, "topic")
+	}
+
 	if err != nil {
 		return nil, err
 	}
 	//将传递进来的msg转化成Append需要的格式
 	message := make([]*pubsub.Message, len(msg))
 	for i := range msg {
-		message[i].Payload = []byte(msg[i])
+		message[i] = &pubsub.Message{
+			Payload: []byte(msg[i]),
+		}
 	}
 	//如果当前的topic存在 则调用Append接口将消息存储到对应的topic下
 	// f func(topic *pubsub.Topic, messages ...*pubsub.Message) ([]pubsub.MessageID, error)i
@@ -111,7 +123,7 @@ func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]stri
 	}
 	MessageID := make([]string, len(messageID))
 	for i := range messageID {
-		MessageID = append(MessageID, messageID[i].String())
+		MessageID[i] = messageID[i].String()
 	}
 
 	return MessageID, nil
