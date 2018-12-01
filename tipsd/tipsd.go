@@ -204,7 +204,7 @@ func (t *Server) Pull(c *gin.Context) {
 		OffAck:  req.OffAck,
 		Offset:  req.Offset,
 	}
-	ctx, cancel := context.WithCancel(t.ctx)
+	ctx, cancel := context.WithTimeout(t.ctx, t1)
 	defer cancel()
 	msgs, err := t.pull(ctx, pReq, t1)
 	if err != nil {

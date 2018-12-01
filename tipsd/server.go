@@ -83,16 +83,19 @@ func GenName() string {
 func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Duration) ([]*tips.Message, error) {
 	tick := time.Tick(timeout)
 	var msgs []*tips.Message
-	for len(msgs) < int(req.Limit) {
+	var err error
+	for {
 		select {
 		case <-tick:
 			return msgs, nil
 		default:
-			m, err := t.pubsub.Pull(ctx, req)
+			msgs, err = t.pubsub.Pull(ctx, req)
 			if err != nil {
 				return nil, err
 			}
-			msgs = append(msgs, m...)
+		}
+		if len(msgs) != 0 {
+			break
 		}
 		time.Sleep(time.Millisecond * 100)
 	}
