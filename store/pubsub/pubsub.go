@@ -16,8 +16,8 @@ import (
 
 /* Key encoding format
 *  T:{name} // topic
-*  S:{topic}:{name} // subscription
-*  SS:{name} // snapshot
+*  S:{objectid}:{name} // subscription
+*  SS:{objectid}:{snapshot}:{name} // snapshot
 *  M:{topic}{offset} // message
 *
  */
@@ -332,6 +332,7 @@ func MessageKey(topic *Topic, offset *Offset) []byte {
 	var key []byte
 	key = append(key, 'M', ':')
 	key = append(key, topic.ObjectID...)
+	key = append(key, ':')
 	if offset != nil {
 		key = append(key, offset.Bytes()...)
 	}
