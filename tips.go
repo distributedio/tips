@@ -100,11 +100,6 @@ func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]stri
 	for i := range msg {
 		message[i].Payload = []byte(msg[i])
 	}
-	//type MessageID struct {
-	//    *Offset
-	//}
-	//messageID = []struct{*Offset}   Offset ==type  type Offset struct {    TS    int64 // TS 是从PD获取的时间  Index int64 }
-	//messageID[i]=struct{*Offset}
 	//如果当前的topic存在 则调用Append接口将消息存储到对应的topic下
 	// f func(topic *pubsub.Topic, messages ...*pubsub.Message) ([]pubsub.MessageID, error)i
 	messageID, err := txn.Append(t, message...)
@@ -115,7 +110,7 @@ func (ti *Tips) Publish(cxt context.Context, msg []string, topic string) ([]stri
 	for i := range messageID {
 		MessageID = append(MessageID, messageID[i].String())
 	}
-	return nil, nil
+	return MessageID, nil
 }
 
 func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
@@ -124,6 +119,18 @@ func (ti *Tips) Ack(cxt context.Context, msgids []string) (err error) {
 
 //Subscribe 指定topic 和 subscription 订阅关系
 func (ti *Tips) Subscribe(cxt context.Context, subName string, topic string) (int64, error) {
+	//	txn, err := ti.ps.Begin()
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	//查看当前topic是否存在
+	//t, err := txn.GetTopic(topic)
+	//如果当前的topic不存在，那么返回错误
+	//	if err != nil {
+	//		return 0, err
+	//	}
+	// f func(t *pubsub.Topic, name string) (*pubsub.Subscription, error)
+	//	txn.GetSubscription()
 	return 0, nil
 }
 
