@@ -17,11 +17,12 @@ func (s *Server) CreateTopic(c *gin.Context) {
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
-	if _, err := s.pubsub.CreateTopic(ctx, topic); err != nil {
+	t, err := s.pubsub.CreateTopic(ctx, topic)
+	if err != nil {
 		fail(c, http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, topic)
+	c.JSON(http.StatusOK, t)
 	metrics.GetMetrics().TopicsHistogramVec.WithLabelValues("create").Observe(time.Since(start).Seconds())
 	return
 }

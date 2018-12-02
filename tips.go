@@ -285,6 +285,7 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		req.Limit--
 		return true
 	}
+	ack := sub.Acked
 
 	if !req.AutoACK {
 		sub.Acked = pubsub.OffsetFromString(req.Offset)
@@ -296,6 +297,7 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 	if len(messages) == 0 {
 		return messages, txn.Commit(ctx)
 	}
+	sub.Acked = ack
 
 	sub.Sent = pubsub.OffsetFromString(messages[len(messages)-1].ID)
 	if req.AutoACK {
