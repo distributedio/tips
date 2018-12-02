@@ -113,7 +113,7 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assert.Len(t, strings.Split(body, ","), 10)
 
-	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(`{"autoack":true}`))
+	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(`{"autoack":true,"limit":1}`))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 1, "0")
 
@@ -149,6 +149,7 @@ func TestNormal(t *testing.T) {
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 3, "9")
 
+	method = fmt.Sprintf(`{"autoack":true,"limit":3,"timeout":1}`)
 	code, body = makeRequest(t, url+"/v1/subscriptions/t1/s1", "POST", strings.NewReader(method))
 	assertCodeOK(t, code)
 	assertBodyLen(t, body, 0, "0")
