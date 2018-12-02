@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -199,15 +200,15 @@ func (t *Server) Pull(c *gin.Context) {
 		AutoACK bool
 		Offset  string
 	}{}
-	if err := c.BindJSON(req); err != nil {
+	if err := c.BindJSON(req); err != nil && err != io.EOF {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	if req.Limit <= 0 {
-		req.Limit = 1
+		req.Limit = 256
 	}
 	if req.Timeout == 0 {
-		req.Timeout = 1
+		req.Timeout = 3600
 	}
 
 	t1 := time.Duration(req.Timeout) * time.Second
