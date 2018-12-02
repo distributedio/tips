@@ -242,7 +242,70 @@ func TestUnsubscribe(t *testing.T) {
 
 }
 func TestPull(t *testing.T) {
+	tips, err := MockTips()
+	if err != nil {
+		panic(err)
+	}
+	top1, err := tips.CreateTopic(context.Background(), "t1")
+	assert.NoError(t, err)
 
+	sub, err := tips.Subscribe(context.Background(), "SubName", "t1")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub)
+
+	//构造msgs
+	var messages []string
+	messages = append(messages, "hello tips1")
+	messages = append(messages, "hello tips2")
+	messages = append(messages, "hello tips3")
+	msgid, err := tips.Publish(context.Background(), messages, "t1")
+	assert.NoError(t, err)
+	assert.NotNil(t, msgid)
+
+	txn, err := tips.ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	//      sub, err = tips.Subscribe(context.Background(),"SubName","ti")
+	//    assert.NoError(t, err)
+	//   assert.NotNil(t, sub)
+	var msgs []*Message
+	limit := 3
+	scan := func(id pubsub.MessageID, message *pubsub.Message) bool {
+		if limit <= 0 {
+			return false
+		}
+		msgs = append(msgs, &Message{
+			Payload: message.Payload,
+			ID:      id.String(),
+		})
+		limit--
+		return true
+	}
+	for i := 0; i < 3; i++ {
+		err := txn.Scan(&top1.Topic, pubsub.OffsetFromString(msgid[i]), scan)
+
+		assert.NoError(t, err)
+	}
+	txn.Commit(context.TODO())
+
+	// f func(ctx context.Context, req *PullReq) ([]*Message, error)
+	req := &PullReq{
+		SubName: "SubName",
+		Topic:   "t1",
+		Limit:   int64(3),
+		AutoACK: true,
+		Offset:  "",
+	}
+	ms, err := tips.Pull(context.Background(), req)
+	assert.NoError(t, err)
+	assert.NotNil(t, ms)
+	for i := 2; i < 0; i-- {
+
+		assert.Equal(t, msgs[0].ID, ms[0].ID)
+		assert.Equal(t, string(msgs[0].Payload), string(ms[0].Payload))
+
+	}
 }
 
 func TestCreateSnapshots(t *testing.T) {
