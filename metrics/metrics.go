@@ -20,25 +20,23 @@ const (
 )
 
 var (
-	//Label value slice when creating prometheus object
 	optLabel    = []string{opt}
 	leaderLabel = []string{leader}
 	gcKeysLabel = []string{gckeys}
 
-	// global prometheus object
 	gm *Metrics
 )
 
-//Metrics prometheus statistics
 type Metrics struct {
 	//command biz
-	TxnCommitHistogramVec *prometheus.HistogramVec
-	TxnFailuresCounterVec *prometheus.CounterVec
+	// TxnCommitHistogramVec *prometheus.HistogramVec
+	// TxnFailuresCounterVec *prometheus.CounterVec
 
-	//biz
-	TopicCounterVec        *prometheus.CounterVec
-	SubscribtionCounterVec *prometheus.CounterVec
-	SnapshotCounterVec     *prometheus.CounterVec
+	TopicsHistogramVec        *prometheus.HistogramVec
+	SubscribtionsHistogramVec *prometheus.HistogramVec
+	SnapshotsHistogramVec     *prometheus.HistogramVec
+	MessagesHistogramVec      *prometheus.HistogramVec
+	MessagesSizeHistogramVec  *prometheus.HistogramVec
 
 	//logger
 	LogMetricsCounterVec *prometheus.CounterVec
@@ -48,38 +46,50 @@ type Metrics struct {
 func init() {
 	gm = &Metrics{}
 
-	gm.TopicCounterVec = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "txn_retries_total",
-			Help:      "The total of txn retries",
-		}, optLabel)
-	prometheus.MustRegister(gm.TopicCounterVec)
-
-	gm.SnapshotCounterVec = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "txn_conflicts_total",
-			Help:      "The total of txn conflicts",
-		}, optLabel)
-	prometheus.MustRegister(gm.SnapshotCounterVec)
-
-	gm.SubscribtionCounterVec = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "txn_failures_total",
-			Help:      "The total of txn failures",
-		}, optLabel)
-	prometheus.MustRegister(gm.SubscribtionCounterVec)
-
-	gm.TxnCommitHistogramVec = prometheus.NewHistogramVec(
+	gm.TopicsHistogramVec = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
-			Name:      "txn_commit_seconds",
+			Name:      "topics_opt_seconds",
 			Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 20),
-			Help:      "The cost times of txn commit",
+			Help:      "The cost times of txn topic opt",
 		}, optLabel)
-	prometheus.MustRegister(gm.TxnCommitHistogramVec)
+	prometheus.MustRegister(gm.TopicsHistogramVec)
+
+	gm.SubscribtionsHistogramVec = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "subscribtions_opt_seconds",
+			Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 20),
+			Help:      "The cost times of subscribtion opt",
+		}, optLabel)
+	prometheus.MustRegister(gm.SubscribtionsHistogramVec)
+
+	gm.SnapshotsHistogramVec = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "snapshots_opt_seconds",
+			Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 20),
+			Help:      "The cost times of snapshot opt",
+		}, optLabel)
+	prometheus.MustRegister(gm.SnapshotsHistogramVec)
+
+	gm.MessagesHistogramVec = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "messages_opt_seconds",
+			Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 20),
+			Help:      "The cost times of message opt",
+		}, optLabel)
+	prometheus.MustRegister(gm.MessagesHistogramVec)
+
+	gm.MessagesSizeHistogramVec = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "messages_size_seconds",
+			Buckets:   prometheus.ExponentialBuckets(0.0005, 2, 20),
+			Help:      "The size of message opt",
+		}, optLabel)
+	prometheus.MustRegister(gm.MessagesSizeHistogramVec)
 
 	gm.LogMetricsCounterVec = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -91,7 +101,7 @@ func init() {
 	)
 	prometheus.MustRegister(gm.LogMetricsCounterVec)
 
-	http.Handle("/tips/metrics", prometheus.Handler())
+	http.Handle("/metrics", prometheus.Handler())
 }
 
 //GetMetrics return metrics object

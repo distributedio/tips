@@ -8,10 +8,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/shafreeck/tips"
+	"github.com/shafreeck/tips/metrics"
 )
 
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字
 func (s *Server) CreateTopic(c *gin.Context) {
+	start := time.Now()
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
@@ -20,11 +22,13 @@ func (s *Server) CreateTopic(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, topic)
+	metrics.GetMetrics().TopicsHistogramVec.WithLabelValues("create").Observe(time.Since(start).Seconds())
 	return
 }
 
 //Topic 查询topic 订阅信息
 func (t *Server) Topic(c *gin.Context) {
+	start := time.Now()
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
@@ -38,11 +42,13 @@ func (t *Server) Topic(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, msg)
+	metrics.GetMetrics().TopicsHistogramVec.WithLabelValues("topic").Observe(time.Since(start).Seconds())
 }
 
 //Destroy 销毁topic
 //禁止 topic 为空
 func (t *Server) Destroy(c *gin.Context) {
+	start := time.Now()
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
 	defer cancel()
@@ -51,12 +57,14 @@ func (t *Server) Destroy(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+	metrics.GetMetrics().TopicsHistogramVec.WithLabelValues("delete").Observe(time.Since(start).Seconds())
 }
 
 //Publish 消息下发 支持批量下发,返回下发成功的msgids
 //msgids 返回的序列和下发消息序列保持一直
 //禁止 topic 和 msgs 未空
 func (t *Server) Publish(c *gin.Context) {
+	start := time.Now()
 	topic := c.Param("topic")
 	pub := &struct {
 		Messages []string
@@ -81,10 +89,18 @@ func (t *Server) Publish(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, msgids)
+	metrics.GetMetrics().MessagesHistogramVec.WithLabelValues("publish").Observe(time.Since(start).Seconds())
+
+	var size float64
+	for _, msg := range pub.Messages {
+		size += float64(len(msg))
+	}
+	metrics.GetMetrics().MessagesSizeHistogramVec.WithLabelValues("publish").Observe(size)
 }
 
 //Ack 回复消息ack 禁止msgids为空
 func (t *Server) Ack(c *gin.Context) {
+	start := time.Now()
 	subName := c.Param("subname")
 	topic := c.Param("topic")
 	msgid := c.Param("msgid")
@@ -100,11 +116,13 @@ func (t *Server) Ack(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+	metrics.GetMetrics().MessagesHistogramVec.WithLabelValues("ack").Observe(time.Since(start).Seconds())
 }
 
 //Subscribe 指定topic 和 subscription 订阅关系
 //禁止topic 和subscition 为空
 func (t *Server) Subscribe(c *gin.Context) {
+	start := time.Now()
 	subName := c.Param("subname")
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
@@ -119,11 +137,13 @@ func (t *Server) Subscribe(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, index)
+	metrics.GetMetrics().SubscribtionsHistogramVec.WithLabelValues("sub").Observe(time.Since(start).Seconds())
 }
 
 //Unsubscribe 指定topic 和 subscription 订阅关系
 //禁止topic 和subscition 为空
 func (t *Server) Unsubscribe(c *gin.Context) {
+	start := time.Now()
 	subName := c.Param("subname")
 	topic := c.Param("topic")
 	ctx, cancel := context.WithCancel(t.ctx)
@@ -138,6 +158,7 @@ func (t *Server) Unsubscribe(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+	metrics.GetMetrics().SubscribtionsHistogramVec.WithLabelValues("unsub").Observe(time.Since(start).Seconds())
 }
 
 //Subscription 查询当前subscription的信息
@@ -170,6 +191,7 @@ func (t *Server) Subscription(c *gin.Context) {
 //如果没有指定消息拉去超时间，默认1s 超时,超时单位默认为s
 //返回下一次拉去的位置
 func (t *Server) Pull(c *gin.Context) {
+	start := time.Now()
 	req := &struct {
 		Limit   int64
 		Timeout int64
@@ -207,6 +229,13 @@ func (t *Server) Pull(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, msgs)
+	metrics.GetMetrics().SubscribtionsHistogramVec.WithLabelValues("pull").Observe(time.Since(start).Seconds())
+	var size float64
+	for _, msg := range msgs {
+		size += float64(len(msg.Payload))
+		size += float64(len(msg.ID))
+	}
+	metrics.GetMetrics().MessagesSizeHistogramVec.WithLabelValues("pull").Observe(size)
 }
 
 //CreateSnapshots 创建一个时间的点
@@ -214,6 +243,7 @@ func (t *Server) Pull(c *gin.Context) {
 //name 未指定默认，系统自动生成
 //返回创建snapshots名字
 func (t *Server) CreateSnapshots(c *gin.Context) {
+	start := time.Now()
 	subName := c.Param("subname")
 	name := c.Param("name")
 	topic := c.Param("topic")
@@ -229,11 +259,13 @@ func (t *Server) CreateSnapshots(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, name)
+	metrics.GetMetrics().SnapshotsHistogramVec.WithLabelValues("create").Observe(time.Since(start).Seconds())
 }
 
 //DeleteSnapshots 删除snapshots
 //禁止name 和subname 为空
 func (t *Server) DeleteSnapshots(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("name")
 	subName := c.Param("subname")
 	topic := c.Param("topic")
@@ -249,6 +281,7 @@ func (t *Server) DeleteSnapshots(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+	metrics.GetMetrics().SnapshotsHistogramVec.WithLabelValues("delete").Observe(time.Since(start).Seconds())
 }
 
 //GetSnapshots 获取snapshots 配置
@@ -274,6 +307,7 @@ func (t *Server) GetSnapshots(c *gin.Context) {
 
 //Seek 获取订阅通道 snapshots开始位置
 func (t *Server) Seek(c *gin.Context) {
+	start := time.Now()
 	name := c.Param("name")
 	subName := c.Param("subname")
 	topic := c.Param("topic")
@@ -289,4 +323,5 @@ func (t *Server) Seek(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, sub)
+	metrics.GetMetrics().SnapshotsHistogramVec.WithLabelValues("seek").Observe(time.Since(start).Seconds())
 }
