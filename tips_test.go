@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/shafreeck/tips/store/pubsub"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,7 +71,48 @@ func TestDestroy(t *testing.T) {
 	assert.Equal(t, err2, fmt.Errorf(ErrNotFound, "topic"))
 }
 func TestPublish(t *testing.T) {
+	tips, err := MockTips()
+	if err != nil {
+		panic(err)
+	}
+	top1, err := tips.CreateTopic(context.Background(), "t1")
+	assert.NoError(t, err)
 
+	var messages []string
+
+	//构造msgs
+	messages = append(messages, "hello tips1")
+	messages = append(messages, "hello tips2")
+	messages = append(messages, "hello tips3")
+	msgid, err := tips.Publish(context.Background(), messages, "t1")
+	assert.NoError(t, err)
+	assert.NotNil(t, msgid)
+
+	txn, err := tips.ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+	var msgs []*Message
+	limit := 3
+	scan := func(id pubsub.MessageID, message *pubsub.Message) bool {
+		if limit <= 0 {
+			return false
+		}
+		msgs = append(msgs, &Message{
+			Payload: message.Payload,
+			ID:      id.String(),
+		})
+		limit--
+		return true
+	}
+	for i := 0; i < 3; i++ {
+		err := txn.Scan(&top1.Topic, pubsub.OffsetFromString(msgid[i]), scan)
+
+		assert.NoError(t, err)
+	}
+	txn.Commit(context.TODO())
+	for i := 0; i < 3; i++ {
+		assert.Equal(t, msgid[i], msgs[i].ID)
+	}
 }
 func TestAck(t *testing.T) {
 
