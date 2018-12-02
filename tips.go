@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/shafreeck/tips/store/pubsub"
+	"go.uber.org/zap"
 )
 
 var (
@@ -64,6 +65,7 @@ func (ti *Tips) CreateTopic(ctx context.Context, topic string) (*Topic, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	t, err := txn.CreateTopic(topic)
 	if err != nil {
 		return nil, err
@@ -83,6 +85,7 @@ func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(name)
 	if err == pubsub.ErrNotFound {
@@ -105,6 +108,7 @@ func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	if err != nil {
 		return err
 	}
+	defer rollback(txn, err)
 	if err = txn.DeleteTopic(topic); err != nil {
 		return err
 	}
@@ -122,6 +126,7 @@ func (ti *Tips) Publish(ctx context.Context, msg []string, topic string) ([]stri
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
@@ -160,6 +165,7 @@ func (ti *Tips) Ack(ctx context.Context, msgid string, topic string, subName str
 	if err != nil {
 		return err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
@@ -188,6 +194,7 @@ func (ti *Tips) Subscribe(ctx context.Context, subName string, topic string) (*S
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
@@ -216,6 +223,7 @@ func (ti *Tips) Unsubscribe(ctx context.Context, subName string, topic string) e
 	if err != nil {
 		return err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
@@ -245,6 +253,7 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(req.Topic)
 	if err == pubsub.ErrNotFound {
@@ -305,6 +314,7 @@ func (ti *Tips) CreateSnapshots(ctx context.Context, SnapName string, subName st
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
@@ -339,6 +349,7 @@ func (ti *Tips) GetSnapshot(ctx context.Context, SnapName string, subName string
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
@@ -375,6 +386,7 @@ func (ti *Tips) DeleteSnapshots(ctx context.Context, SnapName string, subName st
 	if err != nil {
 		return err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	//如果当前的topic不存在，那么返回错误
@@ -407,6 +419,7 @@ func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic
 	if err != nil {
 		return nil, err
 	}
+	defer rollback(txn, err)
 	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
@@ -447,4 +460,13 @@ func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic
 	subscription := &Subscription{}
 	subscription.Subscription = *sub
 	return subscription, nil
+}
+
+// rollback the transaction
+func rollback(txn *pubsub.Transaction, err error) {
+	if err != nil {
+		if err := txn.Rollback(); err != nil {
+			zap.L().Fatal("rollback failed", zap.Error(err))
+		}
+	}
 }
