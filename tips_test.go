@@ -115,7 +115,44 @@ func TestPublish(t *testing.T) {
 	}
 }
 func TestAck(t *testing.T) {
+	tips, err := MockTips()
+	if err != nil {
+		panic(err)
+	}
+	top1, err := tips.CreateTopic(context.Background(), "t1")
+	assert.NoError(t, err)
+	var messages []string
 
+	//构造msgs
+	messages = append(messages, "hello tips1")
+	messages = append(messages, "hello tips2")
+	messages = append(messages, "hello tips3")
+	msgid, err := tips.Publish(context.Background(), messages, "t1")
+	assert.NoError(t, err)
+	assert.NotNil(t, msgid)
+
+	txn, err := tips.ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	sub, err := txn.CreateSubscription(&top1.Topic, "SubName")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub)
+	txn.Commit(context.TODO())
+
+	err = tips.Ack(context.Background(), msgid[2], "t1", "SubName")
+	assert.NoError(t, err)
+
+	txn, err = tips.ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+	sub2, err := txn.GetSubscription(&top1.Topic, "SubName")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub2)
+	txn.Commit(context.TODO())
+
+	assert.NotEqual(t, sub.Acked.String(), sub2.Acked.String())
+	assert.Equal(t, pubsub.OffsetFromString(msgid[2]).String(), sub2.Acked.String())
 }
 
 func TestSubscribe(t *testing.T) {
@@ -366,5 +403,30 @@ func TestDeleteSnapshots(t *testing.T) {
 
 }
 func TestSeek(t *testing.T) {
+	tips, err := MockTips()
+	if err != nil {
+		panic(err)
+	}
+	top1, err := tips.CreateTopic(context.Background(), "t1")
+	assert.NoError(t, err)
 
+	txn, err := tips.ps.Begin()
+	assert.NoError(t, err)
+	assert.NotNil(t, txn)
+
+	sub, err := txn.CreateSubscription(&top1.Topic, "SubName")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub)
+	//        CreateSnapshot     f func(topic *pubsub.Topic, subscription *pubsub.Subscription, name string) (*pubsub.Snapshot, error)
+	snap, err := txn.CreateSnapshot(&top1.Topic, sub, "SnapName")
+	assert.NoError(t, err)
+	assert.NotNil(t, snap)
+	txn.Commit(context.TODO())
+
+	sub2, err := tips.Seek(context.Background(), "SnapName", "SubName", "t1")
+	assert.NoError(t, err)
+	assert.NotNil(t, sub2)
+	assert.Equal(t, sub.Acked.String(), sub2.Acked.String())
+	assert.Equal(t, sub.Sent.String(), sub2.Sent.String())
+	assert.Equal(t, sub.Name, sub2.Name)
 }
