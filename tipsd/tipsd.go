@@ -186,9 +186,6 @@ func (t *Server) Pull(c *gin.Context) {
 	if req.Timeout == 0 {
 		req.Timeout = 1
 	}
-	if !req.AutoACK && len(req.Offset) == 0 {
-		req.AutoACK = true
-	}
 
 	t1 := time.Duration(req.Timeout) * time.Second
 	pReq := &tips.PullReq{

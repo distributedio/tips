@@ -288,10 +288,10 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		return messages, txn.Commit(ctx)
 	}
 
-	if req.AutoACK {
-		sub.Acked = pubsub.OffsetFromString(messages[len(messages)-1].ID)
-	}
 	sub.Sent = pubsub.OffsetFromString(messages[len(messages)-1].ID)
+	if req.AutoACK {
+		sub.Acked = sub.Sent
+	}
 	txn.UpdateSubscription(t, sub)
 
 	if err = txn.Commit(ctx); err != nil {
