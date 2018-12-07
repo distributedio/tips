@@ -137,7 +137,7 @@ func TestCreateTopic(t *testing.T) {
 	assert.Equal(t, topic.ObjectID, got.ObjectID)
 	assert.Equal(t, topic.CreatedAt, got.CreatedAt)
 
-	// 测试Topic已经存在的情况
+	// Check the case that the topic existed
 	got, err = txn.CreateTopic("unittest")
 	assert.NoError(t, err)
 	assert.NoError(t, txn.Commit(context.Background()))
@@ -176,7 +176,7 @@ func TestDeleteTopic(t *testing.T) {
 	}
 	assert.NoError(t, txn.Commit(context.Background()))
 
-	// 检查是否真正删除
+	// Make sure that topics are really deleted
 	txn, err = ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
@@ -270,7 +270,7 @@ func TestCreateSubscription(t *testing.T) {
 	assert.Equal(t, offset.String(), got.Sent.String())
 	assert.Equal(t, offset.String(), got.Acked.String())
 
-	// 测试Subscription已经存在的情况
+	// Check the existence case
 	got, err = txn.CreateSubscription(topic, "sub")
 	assert.NoError(t, err)
 	assert.NotNil(t, sub)
@@ -316,7 +316,7 @@ func TestDeleteSubscription(t *testing.T) {
 	}
 	assert.NoError(t, txn.Commit(context.Background()))
 
-	// 检查是否真的删除
+	// Make sure that are really deleted
 	txn, err = ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
@@ -428,7 +428,7 @@ func TestCreateSnapshot(t *testing.T) {
 	assert.Equal(t, snapshot.Subscription.Sent.String(), got.Subscription.Sent.String())
 	assert.Equal(t, snapshot.Subscription.Acked.String(), got.Subscription.Acked.String())
 
-	// 当Snapshot已经存在时，返回存在的Snapshot
+	// Check the existence case
 	subscription2 := &Subscription{Name: "sub", Sent: &Offset{time.Now().UnixNano(), 0}, Acked: &Offset{time.Now().UnixNano(), 0}}
 	snapshot, err = txn.CreateSnapshot(topic, subscription2, "snap")
 	assert.NoError(t, err)
@@ -528,7 +528,7 @@ func TestDeleteSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// 检查是否真正删除成功
+	// Make sure that are really deleted
 	for n := range snapshots {
 		ss, err := txn.GetSnapshot(topic, subscription, n)
 		assert.Equal(t, ErrNotFound, err)
@@ -643,7 +643,7 @@ func TestAppend(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
-	// 生成一个过去时间，确保新生成的Offset一定会比这个数值大，不受时钟调整的影响
+	// Use a very old timestamp to avoid clock skewing
 	now := time.Now().UnixNano() - int64(10*time.Second)
 	topic := &Topic{Name: "unittest", ObjectID: UUID(), CreatedAt: now}
 
