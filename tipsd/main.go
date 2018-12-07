@@ -13,10 +13,10 @@ import (
 	rolling "github.com/arthurkiller/rollingWriter"
 	"github.com/shafreeck/configo"
 	"github.com/shafreeck/continuous"
-	"github.com/shafreeck/tips"
-	"github.com/shafreeck/tips/conf"
-	"github.com/shafreeck/tips/metrics"
 	"github.com/sirupsen/logrus"
+	"github.com/tipsio/tips"
+	"github.com/tipsio/tips/conf"
+	"github.com/tipsio/tips/metrics"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

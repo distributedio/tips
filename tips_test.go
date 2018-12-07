@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/shafreeck/tips/store/pubsub"
 	"github.com/stretchr/testify/assert"
+	"github.com/tipsio/tips/store/pubsub"
 )
 
 func TestCreateTopic(t *testing.T) {

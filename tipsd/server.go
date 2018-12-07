@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/shafreeck/tips"
-	"github.com/shafreeck/tips/conf"
+	"github.com/tipsio/tips"
+	"github.com/tipsio/tips/conf"
 	"github.com/twinj/uuid"
 )
 

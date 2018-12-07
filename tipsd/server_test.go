@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shafreeck/tips"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tipsio/tips"
 )
 
 func assertCodeOK(t testing.TB, code int) {

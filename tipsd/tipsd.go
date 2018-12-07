@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/shafreeck/tips"
-	"github.com/shafreeck/tips/metrics"
+	"github.com/tipsio/tips"
+	"github.com/tipsio/tips/metrics"
 )
 
 //CreateTopic 创建一个topic 未知指定topic name 系统自动生成一个 返回给客户端topic名字

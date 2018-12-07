@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shafreeck/tips"
-	"github.com/shafreeck/tips/conf"
+	"github.com/tipsio/tips"
+	"github.com/tipsio/tips/conf"
 )
 
 var addr = "127.0.0.1:12345"

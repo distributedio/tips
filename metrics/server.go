@@ -9,7 +9,7 @@ import (
 
 	"time"
 
-	"github.com/shafreeck/tips/conf"
+	"github.com/tipsio/tips/conf"
 )
 
 //Server status server

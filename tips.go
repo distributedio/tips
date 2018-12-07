@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shafreeck/tips/store/pubsub"
+	"github.com/tipsio/tips/store/pubsub"
 	"go.uber.org/zap"
 )
 

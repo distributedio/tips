@@ -3,8 +3,8 @@ package metrics
 import (
 	"testing"
 
-	"github.com/shafreeck/tips/conf"
 	"github.com/stretchr/testify/assert"
+	"github.com/tipsio/tips/conf"
 )
 
 var (
