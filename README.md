@@ -9,16 +9,16 @@ A distributed Pub/Sub system based on TiKV
 
 ## Features
 
-* high performance, high availability, horizontal scaling
-* massive Topics support and massive data support for single Topic
+* High performance, high availability, horizontal scaling
+* Massive Topics support and massive data support for single Topic
 * Topic kept in a global order
 * At-Least-Once reliable communication
-* support concurrent consumers (like, Kafka Consumer Group)
-* snapshot and recovery of subscription state
+* Support concurrent consumers (like, Kafka Consumer Group)
+* Snapshot and recovery of subscription state
 
 ## Scenarios
 
-* asynchronous task processing (e.g. pictures/ videos)
-* event-driven framework (e.g. microservice/Severless )
-* multi-to-multi message communication (e.g. IM/ group chat in live-broadcasting room with large scale )
-* notifications push on mobile devices
+* Asynchronous task processing (e.g. pictures/ videos)
+* Event-driven framework (e.g. microservice/Severless )
+* Multi-to-multi message communication (e.g. IM/ group chat in live-broadcasting room with large scale )
+* Notifications push on mobile devices
