@@ -1,25 +1,24 @@
 # Tips 
 
-基于TiKV的分布式Pub/Sub系统
+A distributed Pub/Sub system based on TiKV
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/shafreeck/tips)](https://goreportcard.com/report/github.com/shafreeck/tips)
 [![Build Status](https://travis-ci.org/shafreeck/tips.svg?branch=master)](https://travis-ci.org/shafreeck/tips)
 [![Coverage Status](https://coveralls.io/repos/github/shafreeck/tips/badge.svg?branch=master)](https://coveralls.io/github/shafreeck/tips?branch=master)
 [![GoDoc](https://godoc.org/github.com/tipsio/tips?status.svg)](https://godoc.org/github.com/shafreeck/tips)
 
-## 功能特性
+## Features
 
-* 高性能、高可用、水平扩展
-* 支持海量Topic个数，以及单Topic海量数据
-* Topic全局有序
-* At-Least-Once的可靠通信
-* 多消费者并发处理（类似Kafka Consumer Group）
-* 支持订阅状态的快照和恢复
+* High performance, high availability, horizontal scaling
+* Massive Topics support and massive data support for single Topic
+* Topic kept in a global order
+* At-Least-Once reliable communication
+* Support concurrent consumers (like, Kafka Consumer Group)
+* Snapshot and recovery of subscription state
 
-## 应用场景
+## Scenarios
 
-* 异步任务处理（比如图片，视频等）
-* 事件驱动模型架构（比如微服务，Severless等）
-* 多对多消息通信（比如即时聊天，大规模直播间群聊等）
-* 移动设备消息推送
-
+* Asynchronous task processing (e.g. pictures/ videos)
+* Event-driven framework (e.g. microservice/Severless )
+* Multi-to-multi message communication (e.g. IM/ group chat in live-broadcasting room with large scale )
+* Notifications push on mobile devices
