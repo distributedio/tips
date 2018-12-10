@@ -10,9 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tipsio/tips"
 	"github.com/tipsio/tips/conf"
-	"github.com/twinj/uuid"
 )
 
+// Server http server
+// currently, it is an HTTP service and HTTPS server is not supported temporarily
 type Server struct {
 	router *gin.Engine
 	pubsub *tips.Tips
@@ -24,6 +25,9 @@ type Server struct {
 	httpServer *http.Server
 }
 
+// NewServer create new server
+// conf parameter configuration
+// pubsub core module object
 func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 	router := gin.New()
 
@@ -35,7 +39,7 @@ func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 		pubsub:     pubsub,
 		httpServer: &http.Server{Handler: router},
 	}
-	s.initRouter()
+
 	return s
 }
 
@@ -61,30 +65,36 @@ func (s *Server) initRouter() {
 	s.router.POST("/v1/snapshots/:topic/:subname/:name", s.Seek)
 }
 
+// Serve accepts incoming connections on the Listener l, creating a
+// new service goroutine for each.
 func (s *Server) Serve(lis net.Listener) error {
 	// return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
+	s.initRouter()
 	return s.httpServer.Serve(lis)
 }
 
+// Stop immediately closes all active net.Listeners and any
+// connections in state StateNew, StateActive, or StateIdle
 func (s *Server) Stop() error {
 	s.cancel()
 	return s.httpServer.Close()
 }
 
+// GracefulStop gracefully shuts down the server without interrupting any
+// active connections
 func (s *Server) GracefulStop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	return s.httpServer.Shutdown(ctx)
 }
 
-func GenName() string {
-	return uuid.NewV4().String()
-}
-
 func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Duration) ([]*tips.Message, error) {
 	tick := time.Tick(timeout)
 	var msgs []*tips.Message
 	var err error
+	/*
+		when no data is available, try again every 100ms until the tick is out.
+	*/
 	for {
 		select {
 		case <-tick:
@@ -103,10 +113,12 @@ func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Durat
 	return msgs, nil
 }
 
+// ErrNotFound the error type found contains not found
 func ErrNotFound(err error) bool {
 	return strings.Contains(err.Error(), "not found")
 }
 
+// Error http server return error
 type Error struct {
 	Reason string `json:"reason"`
 }
