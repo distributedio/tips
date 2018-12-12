@@ -7,6 +7,10 @@ A distributed Pub/Sub system based on TiKV
 [![Coverage Status](https://coveralls.io/repos/github/tipsio/tips/badge.svg?branch=master)](https://coveralls.io/github/tipsio/tips?branch=master)
 [![GoDoc](https://godoc.org/github.com/tipsio/tips?status.svg)](https://godoc.org/github.com/tipsio/tips)
 
+# Roadmap
+
+[milestones](https://github.com/tipsio/tips/milestones?direction=asc&sort=due_date&state=open)
+
 ## Features
 
 * High performance, high availability, horizontal scaling
