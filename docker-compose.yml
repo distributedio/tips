@@ -37,7 +37,7 @@ services:
   tips:
     image: tipsio/tips
     ports:
-      - "7369:7369"
+      - "80:7369"
     command:
       - --pd-addrs=tikv://pd0:2379
     depends_on:
