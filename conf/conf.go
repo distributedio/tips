@@ -11,6 +11,8 @@ type Tips struct {
 type Server struct {
 	Tikv   Tikv   `cfg:"tikv"`
 	Listen string `cfg:"listen; 0.0.0.0:7369; netaddr; address to listen"`
+	Key    string `cfg:"key;;; key file name"`
+	Cert   string `cfg:"Cert;;; tls session ticket file name. ticket use: openssl rand 32"`
 }
 
 type Tikv struct {

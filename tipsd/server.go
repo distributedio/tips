@@ -33,6 +33,8 @@ func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 		cancel:     cancel,
 		router:     router,
 		pubsub:     pubsub,
+		certFile:   conf.Cert,
+		keyFile:    conf.Key,
 		httpServer: &http.Server{Handler: router},
 	}
 	s.initRouter()
@@ -62,7 +64,9 @@ func (s *Server) initRouter() {
 }
 
 func (s *Server) Serve(lis net.Listener) error {
-	// return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
+	if s.certFile != "" && s.keyFile != "" {
+		return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
+	}
 	return s.httpServer.Serve(lis)
 }
 

@@ -1,0 +1,91 @@
+#type:        string
+#description: the file name to record connd PID
+#default:     tips.pid
+#pid-filename = "tips.pid"
+
+[server]
+
+#type:        string
+#rules:       netaddr
+#description: address to listen
+#default:     0.0.0.0:7369
+#listen = "0.0.0.0:7369"
+
+#type:        string
+#description: key file name
+key = ""
+
+#type:        string
+#description: tls session ticket file name. ticket use: openssl rand 32
+Cert = ""
+
+[server.tikv]
+
+#type:        string
+#description: pd address in tidb
+#required
+pd-addrs = ""
+
+
+[status]
+
+#type:        string
+#rules:       nonempty
+#description: listen address of http server
+#default:     0.0.0.0:7345
+#listen = "0.0.0.0:7345"
+
+
+[tikv-logger]
+
+#type:        string
+#rules:       nonempty
+#description: the default log path
+#default:     logs/tikv
+#path = "logs/tikv"
+
+#type:        string
+#description: log level(debug, info, warn, error, panic, fatal)
+#default:     info
+#level = "info"
+
+#type:        bool
+#rules:       boolean
+#description: true for enabling log compress
+#default:     false
+#compress = false
+
+#type:        string
+#description: log time rotate pattern(s m h D M W)
+#default:     0 0 0 * * *
+#time-rotate = "0 0 0 * * *"
+
+
+[logger]
+
+#type:        string
+#description: the default logger name
+#default:     tips
+#name = "tips"
+
+#type:        string
+#description: the default log path
+#default:     logs/tips
+#path = "logs/tips"
+
+#type:        string
+#description: log level(debug, info, warn, error, panic, fatal)
+#default:     info
+#level = "info"
+
+#type:        bool
+#rules:       boolean
+#description: true for enabling log compress
+#default:     false
+#compress = false
+
+#type:        string
+#description: log time rotate pattern(s m h D M W)
+#default:     0 0 0 * * *
+#time-rotate = "0 0 0 * * *"
+
