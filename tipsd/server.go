@@ -12,7 +12,7 @@ import (
 	"github.com/tipsio/tips/conf"
 )
 
-// Server http server
+// Server HTTP service structure
 // currently, it is an HTTP service and HTTPS server is not supported temporarily
 type Server struct {
 	router *gin.Engine
@@ -25,9 +25,7 @@ type Server struct {
 	httpServer *http.Server
 }
 
-// NewServer create new server
-// conf parameter configuration
-// pubsub core module object
+// NewServer creates a server
 func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 	router := gin.New()
 
@@ -92,9 +90,7 @@ func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Durat
 	tick := time.Tick(timeout)
 	var msgs []*tips.Message
 	var err error
-	/*
-		when no data is available, try again every 100ms until the tick is out.
-	*/
+	// when no data is available, try again every 100ms until the tick is out.
 	for {
 		select {
 		case <-tick:
@@ -113,12 +109,12 @@ func (t *Server) pull(ctx context.Context, req *tips.PullReq, timeout time.Durat
 	return msgs, nil
 }
 
-// ErrNotFound the error type found contains not found
+// ErrNotFound returns true if the error is caused by resource missing
 func ErrNotFound(err error) bool {
 	return strings.Contains(err.Error(), "not found")
 }
 
-// Error http server return error
+// Error wraps a http server error
 type Error struct {
 	Reason string `json:"reason"`
 }

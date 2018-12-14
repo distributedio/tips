@@ -12,7 +12,7 @@ import (
 	"github.com/tipsio/tips/metrics"
 )
 
-// CreateTopic create a topic that returns the client topic information
+// CreateTopic creates a topic that returns the client topic information
 func (s *Server) CreateTopic(c *gin.Context) {
 	start := time.Now()
 	topic := c.Param("topic")
@@ -28,7 +28,7 @@ func (s *Server) CreateTopic(c *gin.Context) {
 	return
 }
 
-// Topic query topic subscription information by topic name
+// Topic returns a topic queried by name
 func (t *Server) Topic(c *gin.Context) {
 	start := time.Now()
 	topic := c.Param("topic")
@@ -47,7 +47,7 @@ func (t *Server) Topic(c *gin.Context) {
 	metrics.GetMetrics().TopicsHistogramVec.WithLabelValues("topic").Observe(time.Since(start).Seconds())
 }
 
-// Destroy destruction of the topic by topic name
+// Destroy deletes a topic
 func (t *Server) Destroy(c *gin.Context) {
 	start := time.Now()
 	topic := c.Param("topic")
@@ -61,7 +61,7 @@ func (t *Server) Destroy(c *gin.Context) {
 	metrics.GetMetrics().TopicsHistogramVec.WithLabelValues("delete").Observe(time.Since(start).Seconds())
 }
 
-// Publish message issue supports batch issue, and return msgids that has been successfully issued
+// Publish messages and return the allocated message ids for each
 // msgids msgids returns the same sequence as the outgoing message
 // forbidden topic and MSGS are not empty
 func (t *Server) Publish(c *gin.Context) {
@@ -99,7 +99,7 @@ func (t *Server) Publish(c *gin.Context) {
 	metrics.GetMetrics().MessagesSizeHistogramVec.WithLabelValues("publish").Observe(size)
 }
 
-// Ack reply ack by subname,topic name,msgid
+// Ack acknowledges a message
 func (t *Server) Ack(c *gin.Context) {
 	start := time.Now()
 	subName := c.Param("subname")
@@ -120,7 +120,7 @@ func (t *Server) Ack(c *gin.Context) {
 	metrics.GetMetrics().MessagesHistogramVec.WithLabelValues("ack").Observe(time.Since(start).Seconds())
 }
 
-// Subscribe specify topic and subscription relationships
+// Subscribe a topic
 func (t *Server) Subscribe(c *gin.Context) {
 	start := time.Now()
 	subName := c.Param("subname")
@@ -140,7 +140,7 @@ func (t *Server) Subscribe(c *gin.Context) {
 	metrics.GetMetrics().SubscribtionsHistogramVec.WithLabelValues("sub").Observe(time.Since(start).Seconds())
 }
 
-// Unsubscribe topic and subscription
+// Unsubscribe a topic and subscription
 func (t *Server) Unsubscribe(c *gin.Context) {
 	start := time.Now()
 	subName := c.Param("subname")
@@ -160,7 +160,7 @@ func (t *Server) Unsubscribe(c *gin.Context) {
 	metrics.GetMetrics().SubscribtionsHistogramVec.WithLabelValues("unsub").Observe(time.Since(start).Seconds())
 }
 
-// Pull the message
+// Pull messages of a topic from a given offset
 // forbid topic subName to be empty and limit must be greater than 0
 // the default timeout is 1s and the timeout unit is s
 // returns the position to be pulled next time
@@ -212,7 +212,7 @@ func (t *Server) Pull(c *gin.Context) {
 	metrics.GetMetrics().MessagesSizeHistogramVec.WithLabelValues("pull").Observe(size)
 }
 
-// CreateSnapshots create a point in time by subname ,name ,topic name
+// CreateSnapshots creates a snapshot for a subscription
 // Return to create snapshots message
 func (t *Server) CreateSnapshots(c *gin.Context) {
 	start := time.Now()
@@ -234,7 +234,7 @@ func (t *Server) CreateSnapshots(c *gin.Context) {
 	metrics.GetMetrics().SnapshotsHistogramVec.WithLabelValues("create").Observe(time.Since(start).Seconds())
 }
 
-// DeleteSnapshots delete a point in time by subname ,name ,topic name
+// DeleteSnapshots delete a snapshot
 func (t *Server) DeleteSnapshots(c *gin.Context) {
 	start := time.Now()
 	name := c.Param("name")
@@ -255,7 +255,7 @@ func (t *Server) DeleteSnapshots(c *gin.Context) {
 	metrics.GetMetrics().SnapshotsHistogramVec.WithLabelValues("delete").Observe(time.Since(start).Seconds())
 }
 
-// Seek gets the location where the message was sent when the snapshot was created
+// Seek to a snapshot
 func (t *Server) Seek(c *gin.Context) {
 	start := time.Now()
 	name := c.Param("name")
