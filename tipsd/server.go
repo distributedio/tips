@@ -35,6 +35,8 @@ func NewServer(conf *conf.Server, pubsub *tips.Tips) *Server {
 		cancel:     cancel,
 		router:     router,
 		pubsub:     pubsub,
+		certFile:   conf.Cert,
+		keyFile:    conf.Key,
 		httpServer: &http.Server{Handler: router},
 	}
 
@@ -66,8 +68,11 @@ func (s *Server) initRouter() {
 // Serve accepts incoming connections on the Listener l, creating a
 // new service goroutine for each.
 func (s *Server) Serve(lis net.Listener) error {
-	// return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
 	s.initRouter()
+  
+	if s.certFile != "" && s.keyFile != "" {
+		return s.httpServer.ServeTLS(lis, s.certFile, s.keyFile)
+	}
 	return s.httpServer.Serve(lis)
 }
 
