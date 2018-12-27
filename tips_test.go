@@ -144,6 +144,8 @@ func TestAck(t *testing.T) {
 	txn, err = tips.ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
+
+	//If the current topic exists, the Append interface is called to store the message under the corresponding topic
 	sub2, err := txn.GetSubscription(&top1.Topic, "SubName")
 	assert.NoError(t, err)
 	assert.NotNil(t, sub2)
@@ -160,6 +162,7 @@ func TestSubscribe(t *testing.T) {
 		panic(err)
 	}
 
+	//Create topic and test the existence of topic
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -188,6 +191,7 @@ func TestSubscribe(t *testing.T) {
 	assert.Equal(t, sub2.Name, val.Name)
 	assert.Equal(t, sub2.Sent.String(), val.Sent.String())
 	assert.Equal(t, sub2.Acked.String(), val.Acked.String())
+	//Test sub already exists
 	_, err2 := tips.Subscribe(context.Background(), "subName", "t2")
 
 	assert.Equal(t, err2, fmt.Errorf(ErrNotFound, "topic"))
@@ -437,12 +441,15 @@ func TestDeleteSnapshots(t *testing.T) {
 	snap2, err := tips.CreateSnapshots(context.Background(), "snapName", "SubName", "t2")
 	assert.NoError(t, err)
 	assert.NotNil(t, snap2)
+	//Test for situations where topic  does not exist
 	err = tips.DeleteSnapshots(context.Background(), "snapName", "SubName", "t3")
 
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "topic"))
+	//Test for situations where sub does not exist
 	err = tips.DeleteSnapshots(context.Background(), "snapName", "subName", "t2")
 
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "subname"))
+	//Test for situations where subname does not exist
 	err = tips.DeleteSnapshots(context.Background(), "SnapName", "SubName", "t2")
 
 	assert.Equal(t, err, nil)
