@@ -79,7 +79,7 @@ func TestPublish(t *testing.T) {
 	assert.NoError(t, err)
 
 	var messages []string
-
+	// Build message
 	messages = append(messages, "hello tips1")
 	messages = append(messages, "hello tips2")
 	messages = append(messages, "hello tips3")
@@ -203,7 +203,7 @@ func TestUnsubscribe(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
+	// Create topic and test the existence of topic
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -262,7 +262,9 @@ func TestPull(t *testing.T) {
 	txn, err := tips.ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
-
+	//sub, err = tips.Subscribe(context.Background(),"SubName","ti")
+	//assert.NoError(t, err)
+	//assert.NotNil(t, sub)
 	var msgs []*Message
 	limit := 3
 	scan := func(id pubsub.MessageID, message *pubsub.Message) bool {
