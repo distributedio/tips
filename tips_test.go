@@ -339,7 +339,7 @@ func TestCreateSnapshots(t *testing.T) {
 	assert.Equal(t, snap.Subscription.Sent.String(), got.Subscription.Sent.String())
 	assert.Equal(t, snap.Subscription.Acked.String(), got.Subscription.Acked.String())
 
-	//Returns the existing snapshot when it already exists
+	//Return the existed snapshot instance if there is any.
 	snap2, err := tips.CreateSnapshots(context.Background(), "snapName", "SubName", "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, snap)
@@ -348,11 +348,11 @@ func TestCreateSnapshots(t *testing.T) {
 	assert.Equal(t, snap.Subscription.Sent.String(), snap2.Subscription.Sent.String())
 	assert.Equal(t, snap.Subscription.Acked.String(), snap2.Subscription.Acked.String())
 
-	//Topic and subscription do not exist
+	//The case for both of the topic and the subscription not being existed.
 	snap2, err2 := tips.CreateSnapshots(context.Background(), "snapName", "SubName", "t2")
 	assert.Equal(t, fmt.Errorf(ErrNotFound, "topic"), err2)
 	assert.Nil(t, snap2)
-	//topic exist subscription no exist
+	//The case for the topic being existed while the subscription not.
 	top3, err := tips.CreateTopic(context.Background(), "t3")
 	assert.NoError(t, err)
 	assert.NotNil(t, top3)

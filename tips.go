@@ -13,12 +13,12 @@ var (
 	ErrNotFound = "%s can not found"
 )
 
-// Tips is an instance structure that contains pubsub
+// Tips is a structure which encapsulates a pubsub instance
 type Tips struct {
 	ps *pubsub.Pubsub
 }
 
-// PullReq is a collection of pull request information
+// PullReq is a structure which encapsulates the pull request information
 type PullReq struct {
 	SubName string
 	Topic   string
@@ -27,28 +27,28 @@ type PullReq struct {
 	Offset  string
 }
 
-// Topic is pubsub Topic
+// Topic is a structure which encapsulates the Topic of pubsub instance
 type Topic struct {
 	pubsub.Topic
 }
 
-// Subscription is pubsub Subscription
+// Subscription is a structure which encapsulates the Subscription of pubsub instance
 type Subscription struct {
 	pubsub.Subscription
 }
 
-// Snapshot is pubsub Snapshot
+// Snapshot is a structure which encapsulates the Snapshot of pubsub instance
 type Snapshot struct {
 	pubsub.Snapshot
 }
 
-// Message is a layer of encapsulation of the message
+// Message is an encapsulation of message information
 type Message struct {
 	Payload []byte
 	ID      string
 }
 
-// NewTips new a tips object
+// NewTips returns a tips object
 func NewTips(path string) (tips *Tips, err error) {
 	ps, err := pubsub.Open(path)
 	if err != nil {
@@ -59,7 +59,7 @@ func NewTips(path string) (tips *Tips, err error) {
 	}, nil
 }
 
-// MockTips mock a tips object
+// MockTips returns a mock tips object
 func MockTips() (*Tips, error) {
 	ps, err := pubsub.MockOpen("mocktikv://")
 	if err != nil {
@@ -70,7 +70,7 @@ func MockTips() (*Tips, error) {
 	}, nil
 }
 
-// CreateTopic create a Topic object
+// CreateTopic creates a Topic object
 func (ti *Tips) CreateTopic(ctx context.Context, topic string) (*Topic, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -113,7 +113,7 @@ func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
 	return &Topic{Topic: *t}, nil
 }
 
-// Destroy delete a topic
+// Destroy destorys an instance of a topic
 func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -129,16 +129,16 @@ func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	return nil
 }
 
-// Publish messages and return the allocated message ids for each
-// msgids msgids returns the same sequence as the outgoing message
-// forbidden topic and MSGS are not empty
+// Publish publish messages in a single or batch manner.Return msgids if succeed.
+// The topic and msgs which are the input parameters shouldn't be empty
+// Note that the messages returned should be in the same order as the messages to be published.
 func (ti *Tips) Publish(ctx context.Context, msg []string, topic string) ([]string, error) {
-
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
+
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
@@ -195,7 +195,7 @@ func (ti *Tips) Ack(ctx context.Context, msgid string, topic string, subName str
 
 }
 
-// Subscribe a topic
+// Subscribe associates a topic with a subscription.
 func (ti *Tips) Subscribe(ctx context.Context, subName string, topic string) (*Subscription, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -222,7 +222,7 @@ func (ti *Tips) Subscribe(ctx context.Context, subName string, topic string) (*S
 	return &Subscription{Subscription: *s}, nil
 }
 
-// Unsubscribe a topic and subscription
+// Unsubscribe unsubscribes a topic and delete the subscription
 func (ti *Tips) Unsubscribe(ctx context.Context, subName string, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -247,8 +247,8 @@ func (ti *Tips) Unsubscribe(ctx context.Context, subName string, topic string) e
 	return nil
 }
 
-// Pull messages of a topic from req
-// returns the contents of the pull message
+// Pull pulls messages of a specified topic according to the pull request
+// Returns messages required by the pull request.
 func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 	var messages []*Message
 	txn, err := ti.ps.Begin()
@@ -310,8 +310,8 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 	return messages, nil
 }
 
-// CreateSnapshots creates a snapshot for a subscription
-// Return to create snapshots Objcet
+// CreateSnapshots creates a snapshot of a specified subscription
+// Return the create snapshots Objcet
 func (ti *Tips) CreateSnapshots(ctx context.Context, SnapName string, subName string, topic string) (*Snapshot, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -344,7 +344,7 @@ func (ti *Tips) CreateSnapshots(ctx context.Context, SnapName string, subName st
 	return snapshot, nil
 }
 
-// GetSnapshot get a Snapshot
+// GetSnapshot gets the specified snapshot instance
 func (ti *Tips) GetSnapshot(ctx context.Context, SnapName string, subName string, topic string) (*Snapshot, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -410,7 +410,7 @@ func (ti *Tips) DeleteSnapshots(ctx context.Context, SnapName string, subName st
 	return nil
 }
 
-// Seek to a Subscription
+// Seek seek a specified snapshot
 func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic string) (*Subscription, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
