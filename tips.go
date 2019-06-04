@@ -9,13 +9,16 @@ import (
 )
 
 var (
+	// ErrNotFound no found error
 	ErrNotFound = "%s can not found"
 )
 
+// Tips is a structure which encapsulates a pubsub instance
 type Tips struct {
 	ps *pubsub.Pubsub
 }
 
+// PullReq is a structure which encapsulates the pull request information
 type PullReq struct {
 	SubName string
 	Topic   string
@@ -24,21 +27,28 @@ type PullReq struct {
 	Offset  string
 }
 
+// Topic is a structure which encapsulates the Topic of pubsub instance
 type Topic struct {
 	pubsub.Topic
 }
+
+// Subscription is a structure which encapsulates the Subscription of pubsub instance
 type Subscription struct {
 	pubsub.Subscription
 }
+
+// Snapshot is a structure which encapsulates the Snapshot of pubsub instance
 type Snapshot struct {
 	pubsub.Snapshot
 }
 
+// Message is an encapsulation of message information
 type Message struct {
 	Payload []byte
 	ID      string
 }
 
+// NewTips returns a tips object
 func NewTips(path string) (tips *Tips, err error) {
 	ps, err := pubsub.Open(path)
 	if err != nil {
@@ -49,6 +59,7 @@ func NewTips(path string) (tips *Tips, err error) {
 	}, nil
 }
 
+// MockTips returns a mock tips object
 func MockTips() (*Tips, error) {
 	ps, err := pubsub.MockOpen("mocktikv://")
 	if err != nil {
@@ -59,7 +70,7 @@ func MockTips() (*Tips, error) {
 	}, nil
 }
 
-//创建一个topic
+// CreateTopic creates a Topic object
 func (ti *Tips) CreateTopic(ctx context.Context, topic string) (*Topic, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -79,14 +90,14 @@ func (ti *Tips) CreateTopic(ctx context.Context, topic string) (*Topic, error) {
 
 }
 
-//查看当前topic订阅信息
+// Topic returns a topic queried by name
 func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
+
 	t, err := txn.GetTopic(name)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
@@ -102,7 +113,7 @@ func (ti *Tips) Topic(ctx context.Context, name string) (*Topic, error) {
 	return &Topic{Topic: *t}, nil
 }
 
-//销毁一个topic
+// Destroy destorys an instance of a topic
 func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
@@ -118,18 +129,17 @@ func (ti *Tips) Destroy(ctx context.Context, topic string) error {
 	return nil
 }
 
-//Publish 消息下发 支持批量下发,返回下发成功的msgids
-//msgids 返回的序列和下发消息序列保持一直
+// Publish publish messages in a single or batch manner.Return msgids if succeed.
+// The topic and msgs which are the input parameters shouldn't be empty
+// Note that the messages returned should be in the same order as the messages to be published.
 func (ti *Tips) Publish(ctx context.Context, msg []string, topic string) ([]string, error) {
-	//获取当前topic
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
+
 	t, err := txn.GetTopic(topic)
-	//如果当前的topic不存在，那么返回错误
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
 	}
@@ -137,14 +147,12 @@ func (ti *Tips) Publish(ctx context.Context, msg []string, topic string) ([]stri
 	if err != nil {
 		return nil, err
 	}
-	//将传递进来的msg转化成Append需要的格式
 	message := make([]*pubsub.Message, len(msg))
 	for i := range msg {
 		message[i] = &pubsub.Message{
 			Payload: []byte(msg[i]),
 		}
 	}
-	//如果当前的topic存在 则调用Append接口将消息存储到对应的topic下
 	messageID, err := txn.Append(t, message...)
 	if err != nil {
 		return nil, err
@@ -160,15 +168,14 @@ func (ti *Tips) Publish(ctx context.Context, msg []string, topic string) ([]stri
 	return MessageID, nil
 }
 
+// Ack acknowledges a message
 func (ti *Tips) Ack(ctx context.Context, msgid string, topic string, subName string) (err error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
-	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return err
 	}
@@ -188,16 +195,14 @@ func (ti *Tips) Ack(ctx context.Context, msgid string, topic string, subName str
 
 }
 
-//Subscribe 创建topic 和 subscription 订阅关系
+// Subscribe associates a topic with a subscription.
 func (ti *Tips) Subscribe(ctx context.Context, subName string, topic string) (*Subscription, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
-	//如果当前的topic不存在，那么返回错误
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
 	}
@@ -217,19 +222,17 @@ func (ti *Tips) Subscribe(ctx context.Context, subName string, topic string) (*S
 	return &Subscription{Subscription: *s}, nil
 }
 
-//Unsubscribe 指定topic 和 subscription 订阅关系
+// Unsubscribe unsubscribes a topic and delete the subscription
 func (ti *Tips) Unsubscribe(ctx context.Context, subName string, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
 		return fmt.Errorf(ErrNotFound, "topic")
 	}
-	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return err
 	}
@@ -244,9 +247,8 @@ func (ti *Tips) Unsubscribe(ctx context.Context, subName string, topic string) e
 	return nil
 }
 
-//Subscription 查询当前subscription的信息
-//func (ti *Tips) Subscription(cxt context.Context, subName string) (string, error) {
-//Pull 拉取消息
+// Pull pulls messages of a specified topic according to the pull request
+// Returns messages required by the pull request.
 func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 	var messages []*Message
 	txn, err := ti.ps.Begin()
@@ -254,18 +256,16 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(req.Topic)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
 	}
 
-	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return nil, err
 	}
-	//获取Subscription
 	sub, err := txn.GetSubscription(t, req.SubName)
+
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "subname")
 	}
@@ -310,22 +310,21 @@ func (ti *Tips) Pull(ctx context.Context, req *PullReq) ([]*Message, error) {
 	return messages, nil
 }
 
+// CreateSnapshots creates a snapshot of a specified subscription
+// Return the create snapshots Objcet
 func (ti *Tips) CreateSnapshots(ctx context.Context, SnapName string, subName string, topic string) (*Snapshot, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
 	}
-	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return nil, err
 	}
-	//获取Subscription
 	sub, err := txn.GetSubscription(t, subName)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "subname")
@@ -345,23 +344,21 @@ func (ti *Tips) CreateSnapshots(ctx context.Context, SnapName string, subName st
 	return snapshot, nil
 }
 
+// GetSnapshot gets the specified snapshot instance
 func (ti *Tips) GetSnapshot(ctx context.Context, SnapName string, subName string, topic string) (*Snapshot, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
 	}
 
-	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return nil, err
 	}
-	//获取Subscription
 	sub, err := txn.GetSubscription(t, subName)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "subname")
@@ -382,22 +379,20 @@ func (ti *Tips) GetSnapshot(ctx context.Context, SnapName string, subName string
 	return &Snapshot{Snapshot: *snap}, nil
 }
 
+// DeleteSnapshots delete a snapshot Object
 func (ti *Tips) DeleteSnapshots(ctx context.Context, SnapName string, subName string, topic string) error {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
-	//如果当前的topic不存在，那么返回错误
 	if err == pubsub.ErrNotFound {
 		return fmt.Errorf(ErrNotFound, "topic")
 	}
 	if err != nil {
 		return err
 	}
-	//获取Subscription
 	sub, err := txn.GetSubscription(t, subName)
 	if err == pubsub.ErrNotFound {
 		return fmt.Errorf(ErrNotFound, "subname")
@@ -415,22 +410,20 @@ func (ti *Tips) DeleteSnapshots(ctx context.Context, SnapName string, subName st
 	return nil
 }
 
+// Seek seek a specified snapshot
 func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic string) (*Subscription, error) {
 	txn, err := ti.ps.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(txn, err)
-	//查看当前topic是否存在
 	t, err := txn.GetTopic(topic)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "topic")
 	}
-	//如果当前的topic不存在，那么返回错误
 	if err != nil {
 		return nil, err
 	}
-	//获取Subscription
 	sub, err := txn.GetSubscription(t, subName)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "subname")
@@ -439,7 +432,6 @@ func (ti *Tips) Seek(ctx context.Context, SnapName string, subName string, topic
 		return nil, err
 	}
 
-	//获取snapshot
 	snap, err := txn.GetSnapshot(t, sub, SnapName)
 	if err == pubsub.ErrNotFound {
 		return nil, fmt.Errorf(ErrNotFound, "snapshot")

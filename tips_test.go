@@ -79,8 +79,7 @@ func TestPublish(t *testing.T) {
 	assert.NoError(t, err)
 
 	var messages []string
-
-	//构造msgs
+	// Build message
 	messages = append(messages, "hello tips1")
 	messages = append(messages, "hello tips2")
 	messages = append(messages, "hello tips3")
@@ -123,7 +122,6 @@ func TestAck(t *testing.T) {
 	assert.NoError(t, err)
 	var messages []string
 
-	//构造msgs
 	messages = append(messages, "hello tips1")
 	messages = append(messages, "hello tips2")
 	messages = append(messages, "hello tips3")
@@ -146,6 +144,8 @@ func TestAck(t *testing.T) {
 	txn, err = tips.ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
+
+	//If the current topic exists, the Append interface is called to store the message under the corresponding topic
 	sub2, err := txn.GetSubscription(&top1.Topic, "SubName")
 	assert.NoError(t, err)
 	assert.NotNil(t, sub2)
@@ -162,7 +162,7 @@ func TestSubscribe(t *testing.T) {
 		panic(err)
 	}
 
-	//创建topic,测试topic存在的情况
+	//Create topic and test the existence of topic
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -191,8 +191,7 @@ func TestSubscribe(t *testing.T) {
 	assert.Equal(t, sub2.Name, val.Name)
 	assert.Equal(t, sub2.Sent.String(), val.Sent.String())
 	assert.Equal(t, sub2.Acked.String(), val.Acked.String())
-	//测试sub已经存在的情况
-	//测试topic不存在的情况
+	//Test sub already exists
 	_, err2 := tips.Subscribe(context.Background(), "subName", "t2")
 
 	assert.Equal(t, err2, fmt.Errorf(ErrNotFound, "topic"))
@@ -204,8 +203,7 @@ func TestUnsubscribe(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
-	//创建topic,测试topic存在的情况
+	// Create topic and test the existence of topic
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -253,7 +251,6 @@ func TestPull(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, sub)
 
-	//构造msgs
 	var messages []string
 	messages = append(messages, "hello tips1")
 	messages = append(messages, "hello tips2")
@@ -265,10 +262,9 @@ func TestPull(t *testing.T) {
 	txn, err := tips.ps.Begin()
 	assert.NoError(t, err)
 	assert.NotNil(t, txn)
-
-	//      sub, err = tips.Subscribe(context.Background(),"SubName","ti")
-	//    assert.NoError(t, err)
-	//   assert.NotNil(t, sub)
+	//sub, err = tips.Subscribe(context.Background(),"SubName","ti")
+	//assert.NoError(t, err)
+	//assert.NotNil(t, sub)
 	var msgs []*Message
 	limit := 3
 	scan := func(id pubsub.MessageID, message *pubsub.Message) bool {
@@ -289,7 +285,6 @@ func TestPull(t *testing.T) {
 	}
 	txn.Commit(context.TODO())
 
-	// f func(ctx context.Context, req *PullReq) ([]*Message, error)
 	req := &PullReq{
 		SubName: "SubName",
 		Topic:   "t1",
@@ -314,7 +309,6 @@ func TestCreateSnapshots(t *testing.T) {
 		panic(err)
 	}
 
-	//创建topic,测试topic存在的情况
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -345,7 +339,7 @@ func TestCreateSnapshots(t *testing.T) {
 	assert.Equal(t, snap.Subscription.Sent.String(), got.Subscription.Sent.String())
 	assert.Equal(t, snap.Subscription.Acked.String(), got.Subscription.Acked.String())
 
-	//当snapshot已经存在时 返回存在的Snapshot
+	//Return the existed snapshot instance if there is any.
 	snap2, err := tips.CreateSnapshots(context.Background(), "snapName", "SubName", "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, snap)
@@ -354,11 +348,11 @@ func TestCreateSnapshots(t *testing.T) {
 	assert.Equal(t, snap.Subscription.Sent.String(), snap2.Subscription.Sent.String())
 	assert.Equal(t, snap.Subscription.Acked.String(), snap2.Subscription.Acked.String())
 
-	//topic  subscription 不存在
+	//The case for both of the topic and the subscription not being existed.
 	snap2, err2 := tips.CreateSnapshots(context.Background(), "snapName", "SubName", "t2")
 	assert.Equal(t, fmt.Errorf(ErrNotFound, "topic"), err2)
 	assert.Nil(t, snap2)
-	//topic 存在，s 不存在
+	//The case for the topic being existed while the subscription not.
 	top3, err := tips.CreateTopic(context.Background(), "t3")
 	assert.NoError(t, err)
 	assert.NotNil(t, top3)
@@ -373,7 +367,6 @@ func TestGetSnapshot(t *testing.T) {
 		panic(err)
 	}
 
-	//创建topic,测试topic存在的情况
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -394,15 +387,12 @@ func TestGetSnapshot(t *testing.T) {
 	assert.Equal(t, snap.Subscription.Name, get.Subscription.Name)
 	assert.Equal(t, snap.Subscription.Sent.String(), get.Subscription.Sent.String())
 	assert.Equal(t, snap.Subscription.Acked.String(), get.Subscription.Acked.String())
-	//测试topic不存在的情况
 	get, err = tips.GetSnapshot(context.Background(), "snapName", "SubName", "t2")
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "topic"))
 	assert.Nil(t, get)
-	//测试sub不存在的情况
 	get, err = tips.GetSnapshot(context.Background(), "snapName", "subName", "t1")
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "subname"))
 	assert.Nil(t, get)
-	//测试snapshot不存在的情况
 	get, err = tips.GetSnapshot(context.Background(), "SnapName", "SubName", "t1")
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "snap"))
 	assert.Nil(t, get)
@@ -414,7 +404,6 @@ func TestDeleteSnapshots(t *testing.T) {
 		panic(err)
 	}
 
-	//创建topic,测试topic存在的情况
 	top1, err := tips.CreateTopic(context.Background(), "t1")
 	assert.NoError(t, err)
 	assert.NotNil(t, top1)
@@ -454,14 +443,17 @@ func TestDeleteSnapshots(t *testing.T) {
 	snap2, err := tips.CreateSnapshots(context.Background(), "snapName", "SubName", "t2")
 	assert.NoError(t, err)
 	assert.NotNil(t, snap2)
-	//测试topic不存在的情况
+	//Test for situations where topic  does not exist
 	err = tips.DeleteSnapshots(context.Background(), "snapName", "SubName", "t3")
+
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "topic"))
-	//测试sub不存在的情况
+	//Test for situations where sub does not exist
 	err = tips.DeleteSnapshots(context.Background(), "snapName", "subName", "t2")
+
 	assert.Equal(t, err, fmt.Errorf(ErrNotFound, "subname"))
-	//测试snapshot不存在的情况
+	//Test for situations where subname does not exist
 	err = tips.DeleteSnapshots(context.Background(), "SnapName", "SubName", "t2")
+
 	assert.Equal(t, err, nil)
 
 }
@@ -480,7 +472,6 @@ func TestSeek(t *testing.T) {
 	sub, err := txn.CreateSubscription(&top1.Topic, "SubName")
 	assert.NoError(t, err)
 	assert.NotNil(t, sub)
-	//        CreateSnapshot     f func(topic *pubsub.Topic, subscription *pubsub.Subscription, name string) (*pubsub.Snapshot, error)
 	snap, err := txn.CreateSnapshot(&top1.Topic, sub, "SnapName")
 	assert.NoError(t, err)
 	assert.NotNil(t, snap)
